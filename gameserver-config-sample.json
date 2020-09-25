@@ -1,0 +1,52 @@
+{
+    "databases": {
+        "postgres": {
+            "__comment": "Leave server empty to use local socket",
+            "server": "10.32.250.2",
+            "port": 5432,
+            "username": "saarctf",
+            "password": "<PASSWORD>",
+            "database": "saarctf"
+        },
+        "redis": {
+            "host": "10.32.250.2",
+            "port": 6379,
+            "db": 0,
+            "password": "<PASSWORD>"
+        },
+        "rabbitmq": {
+            "host": "10.32.250.2",
+            "port": 5672,
+            "vhost": "saarctf",
+            "username": "saarctf",
+            "password": "<PASSWORD>"
+        },
+        "website": "sqlite:////opt/config/2020/webpage-db.sqlite3"
+    },
+    "scoreboard_path": "/var/www/scoreboard",
+    "checker_packages_path": "/dev/shm/packages",
+    "logo_input_path": "/opt/config/2020/logo",
+    "flower_url": "https://cp.ctf.saarland:8443/",
+    "flower_internal_url": "http://127.0.0.1:20000/",
+    "flower_ajax_url": "/flower/",
+    "coder_url": "https://cp.ctf.saarland:8444/",
+    "grafana_url": "https://cp.ctf.saarland:8445/",
+    "scoreboard_url": "https://scoreboard.ctf.saarland/",
+    "secret_flags": "0000000000000000000000000000000000000000000000000000000000000000",
+    "flags_rounds_valid": 10,
+    "external_timer": true,
+    "nop_team_id": 1,
+    "dispatcher_check_vpn_status": true,
+    "network": {
+        "game": "10.32.0.0/15",
+        "__ip_syntax": ["number", "or list", ["a", "b", "c"], "= ((team_id / a) mod b) + c"],
+        "vulnbox_ip": [10, [200, 256, 32], [1, 200, 0], 2],
+        "gateway_ip": [10, [200, 256, 32], [1, 200, 0], 1],
+        "testbox_ip": [10, [200, 256, 32], [1, 200, 0], 3],
+        "__range_syntax": ["number", "or list", ["a", "b", "c"], "= ((team_id / a) mod b) + c", "/range"],
+        "team_range": [10, [200, 256, 32], [1, 200, 0], 0, 24],
+        "vpn_host": "vpn.ctf.saarland",
+        "vpn_peer_ips": [10, [200, 256, 48], [1, 200, 0], 1],
+        "gameserver_ip": "10.32.250.2"
+    }
+}

@@ -1,0 +1,86 @@
+{
+  "variables": {
+    "conntrack_accounting_git_repo": "https://github.com/MarkusBauer/saarctf-conntrack-accounting.git",
+    "ssh_authorized_private_keyfile": "",
+    "vm_root_password": ""
+  },
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "source_path": "../basis/output/saarctf-server-base.ova",
+      "boot_command": [
+        "<enter>"
+      ],
+      "ssh_username": "root",
+      "ssh_password": "{{user `vm_root_password`}}",
+      "shutdown_command": "echo 'packer' | shutdown -P now",
+      "export_opts": [
+        "--manifest",
+        "--vsys",
+        "0",
+        "--description",
+        "saarCTF server (powered by saarsec)",
+        "--version",
+        "0.0.1 alpha"
+      ],
+      "output_directory": "output",
+      "vm_name": "saarctf-server-vpn",
+      "format": "ova",
+      "guest_additions_mode": "disable",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "2048"],
+        ["modifyvm", "{{.Name}}", "--vram", "16"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"],
+        ["modifyvm", "{{.Name}}", "--nic1", "nat"],
+        ["modifyvm", "{{.Name}}", "--nic2", "hostonly"],
+        ["modifyvm", "{{.Name}}", "--hostonlyadapter2", "vboxnet1"]
+      ],
+      "keep_registered": true
+    },
+
+    {
+      "type": "hcloud",
+      "image_filter": {
+        "with_selector": [ "ident==saarctf-basis" ]
+      },
+      "location": "fsn1",
+      "server_type": "cx11",
+      "server_name": "saarctf-vpn",
+      "snapshot_name": "saarctf-vpn",
+      "snapshot_labels": {
+        "ident": "saarctf-vpn"
+      },
+      "poll_interval": "1000ms",
+      "ssh_username": "root",
+      "ssh_private_key_file": "../{{user `ssh_authorized_private_keyfile`}}"
+    }
+
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "scripts/",
+      "destination": "/root"
+    },
+    {
+      "type": "file",
+      "source": "configs/",
+      "destination": "/tmp"
+    },
+    {
+      "type": "file",
+      "source": "../srvstatus",
+      "destination": "/opt"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "CONNTRACK_ACCOUNTING_GIT_REPO={{user `conntrack_accounting_git_repo`}}"
+      ],
+      "scripts": [
+        "./vpn-setup.sh",
+        "./monitoring-setup.sh"
+      ]
+    }
+  ]
+}

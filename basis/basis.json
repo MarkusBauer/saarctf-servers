@@ -1,0 +1,103 @@
+{
+  "variables": {
+    "config_git_repo": null,
+    "config_subdir": null,
+    "gameserver_git_repo": "https://github.com/MarkusBauer/saarctf-gameserver.git",
+    "ssh_git_private_key": null,
+    "ssh_git_public_key": null,
+    "ssh_known_hosts_file": null,
+    "ssh_authorized_key": "",
+    "ssh_authorized_key_address": "",
+    "vm_root_password": ""
+  },
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "source_path": "../debian/output/saarctf-server-os.ova",
+      "boot_command": [
+        "<enter>"
+      ],
+      "ssh_username": "root",
+      "ssh_password": "{{user `vm_root_password`}}",
+      "shutdown_command": "echo 'packer' | shutdown -P now",
+      "export_opts": [
+        "--manifest",
+        "--vsys",
+        "0",
+        "--description",
+        "SaarCTF server (powered by saarsec)",
+        "--version",
+        "0.0.1 alpha"
+      ],
+      "output_directory": "output",
+      "vm_name": "saarctf-server-base",
+      "format": "ova",
+      "guest_additions_mode": "disable",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "1024"],
+        ["modifyvm", "{{.Name}}", "--vram", "16"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"],
+        ["modifyvm", "{{.Name}}", "--nic1", "nat"],
+        ["modifyvm", "{{.Name}}", "--nic2", "hostonly"],
+        ["modifyvm", "{{.Name}}", "--hostonlyadapter2", "vboxnet1"],
+        ["modifyvm", "{{.Name}}", "--natpf1", "ssh,tcp,,9022,,22"],
+        ["modifyvm", "{{.Name}}", "--audio", "none"],
+        ["modifyvm", "{{.Name}}", "--rtcuseutc", "on"]
+      ],
+      "keep_registered": true
+    },
+    {
+      "type": "hcloud",
+      "image": "debian-10",
+      "location": "fsn1",
+      "server_type": "cx11",
+      "server_name": "saarctf-basis",
+      "snapshot_name": "saarctf-basis",
+      "snapshot_labels": {
+        "ident": "saarctf-basis"
+      },
+      "poll_interval": "1000ms",
+      "ssh_username": "root"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "../{{user `ssh_git_private_key`}}",
+      "destination": "/root/.ssh/id_rsa"
+    },
+    {
+      "type": "file",
+      "source": "../{{user `ssh_git_public_key`}}",
+      "destination": "/root/.ssh/id_rsa.pub"
+    },
+    {
+      "type": "file",
+      "source": "../{{user `ssh_known_hosts_file`}}",
+      "destination": "/root/.ssh/known_hosts"
+    },
+    {
+      "type": "file",
+      "source": "scripts/",
+      "destination": "/root"
+    },
+    {
+      "type": "file",
+      "source": "configs/",
+      "destination": "/tmp"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "CONFIG_SUBDIR={{user `config_subdir`}}",
+        "CONFIG_GIT_REPO={{user `config_git_repo`}}",
+        "GAMESERVER_GIT_REPO={{user `gameserver_git_repo`}}",
+        "SSH_AUTHORIZED_KEY={{user `ssh_authorized_key`}}",
+        "SSH_AUTHORIZED_KEY_ADDRESS={{user `ssh_authorized_key_address`}}"
+      ],
+      "scripts": [
+        "./basic-setup.sh"
+      ]
+    }
+  ]
+}

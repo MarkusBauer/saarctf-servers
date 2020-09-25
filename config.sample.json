@@ -1,0 +1,22 @@
+{
+  "config_git_repo": "ssh://git@gitlab.your-domain.com:2222/your-ctf/ctf-configuration.git",
+  "config_subdir": "test",
+  "gameserver_git_repo": "https://github.com/MarkusBauer/saarctf-gameserver.git",
+  "conntrack_accounting_git_repo": "https://github.com/MarkusBauer/saarctf-conntrack-accounting.git",
+
+  "ssh_git_private_key": "sshkeys/id_rsa_repos",
+  "ssh_git_public_key": "sshkeys/id_rsa_repos.pub",
+  "ssh_known_hosts_file": "sshkeys/known_hosts",
+
+  "ssh_authorized_key": "ssh-rsa ...",
+  "ssh_authorized_private_keyfile": "sshkeys/id_rsa_server",
+  "ssh_authorized_key_address": "",
+
+  "vm_root_password": "...",
+  "postgresql_replication_password": "...",
+  "grafana_username": "root",
+  "grafana_password": "...",
+  "icecoder_password": "...",
+  "htaccess_username": "...",
+  "htaccess_password": "..."
+}

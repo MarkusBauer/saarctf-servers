@@ -1,0 +1,76 @@
+{
+  "variables": {
+    "ssh_authorized_private_keyfile": "",
+    "vm_root_password": ""
+  },
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "source_path": "../basis/output/saarctf-server-base.ova",
+      "boot_command": [
+        "<enter>"
+      ],
+      "ssh_username": "root",
+      "ssh_password": "{{user `vm_root_password`}}",
+      "shutdown_command": "echo 'packer' | shutdown -P now",
+      "export_opts": [
+        "--manifest",
+        "--vsys",
+        "0",
+        "--description",
+        "saarCTF server (powered by saarsec)",
+        "--version",
+        "0.0.1 alpha"
+      ],
+      "output_directory": "output",
+      "vm_name": "saarctf-server-checker",
+      "format": "ova",
+      "guest_additions_mode": "disable",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "1024"],
+        ["modifyvm", "{{.Name}}", "--vram", "16"],
+        ["modifyvm", "{{.Name}}", "--cpus", "2"],
+        ["modifyvm", "{{.Name}}", "--nic1", "nat"],
+        ["modifyvm", "{{.Name}}", "--nic2", "hostonly"],
+        ["modifyvm", "{{.Name}}", "--hostonlyadapter2", "vboxnet1"]
+      ],
+      "keep_registered": true
+    },
+
+    {
+      "type": "hcloud",
+      "image_filter": {
+        "with_selector": [ "ident==saarctf-basis" ]
+      },
+      "location": "fsn1",
+      "server_type": "cx11",
+      "server_name": "saarctf-checker",
+      "snapshot_name": "saarctf-checker",
+      "snapshot_labels": {
+        "ident": "saarctf-checker"
+      },
+      "poll_interval": "1000ms",
+      "ssh_username": "root",
+      "ssh_private_key_file": "../{{user `ssh_authorized_private_keyfile`}}"
+    }
+
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "celery-configure.sh",
+      "destination": "/usr/local/bin/celery-configure"
+    },
+    {
+      "type": "file",
+      "source": "celery-run.sh",
+      "destination": "/usr/local/bin/celery-run"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "./checker-setup.sh"
+      ]
+    }
+  ]
+}

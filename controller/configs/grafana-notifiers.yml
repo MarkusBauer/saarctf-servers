@@ -1,0 +1,16 @@
+# # config file version
+apiVersion: 1
+
+notifiers:
+  - name: "Control Panel"
+    type: webhook
+    uid: cp
+
+    is_default: true
+    disable_resolve_message: true
+    send_reminder: false
+
+    settings:
+      url: "https://cp.ctf.saarland/api/grafana_warning"
+      username: "HTACCESS_USERNAME"
+      password: "HTACCESS_PASSWORD"
