@@ -20,10 +20,10 @@ We will now prepare server images and setup VPN servers (to test against).
 2. Use [packer](https://www.packer.io/) to build all images except debian (Hetzner version only, Virtualbox is not required). Run these commands (basis build before other builds): 
    ```
    export HCLOUD_TOKEN=<...>
-   cd basis      ; packer build -only=hcloud -on-error=ask basis.json      ; cd ..
-   cd controller ; packer build -only=hcloud -on-error=ask controller.json ; cd ..
-   cd vpn        ; packer build -only=hcloud -on-error=ask vpn.json        ; cd ..
-   cd checker    ; packer build -only=hcloud -on-error=ask checker.json    ; cd ..
+   cd basis      ; packer build -only=hcloud -on-error=ask -var-file=../config.json basis.json      ; cd ..
+   cd controller ; packer build -only=hcloud -on-error=ask -var-file=../config.json controller.json ; cd ..
+   cd vpn        ; packer build -only=hcloud -on-error=ask -var-file=../config.json vpn.json        ; cd ..
+   cd checker    ; packer build -only=hcloud -on-error=ask -var-file=../config.json checker.json    ; cd ..
    ```
    After this step your Hetzner account should have at least snapshots for controller, vpn and checker. 
 3. Create a new private network for the game (or reuse the old one). Configure:
