@@ -16,7 +16,7 @@ If you are following the [general playbook](https://gitlab.saarsec.rocks/saarctf
 ### Preparations (a few days before start)
 We will now prepare server images and setup VPN servers (to test against).
 
-1. Go to `basis/basic-setup.sh` in this repository and edit the first line. Set `CONFIG_SUBDIR` to the name of your new config repo subfolder (created in the very first step). 
+1. Open `config.json` in this repository and edit the key `config_subdir` to the name of your new config repo subfolder (created in the very first step). 
 2. Use [packer](https://www.packer.io/) to build all images except debian (Hetzner version only, Virtualbox is not required). Run these commands (basis build before other builds): 
    ```
    export HCLOUD_TOKEN=<...>
@@ -48,6 +48,8 @@ We will now prepare server images and setup VPN servers (to test against).
 9. Check that [https://scoreboard.ctf.saarland](https://scoreboard.ctf.saarland) and [https://vpn.ctf.saarland](https://vpn.ctf.saarland) both have meaningful output. If scoreboard bugs issue `update-server` on Controller. If Flower / RabbitMQ bug issue `~/rabbitmq-setup.sh`. 
 10. Enable the link to scoreboard on the saarCTF website (`TODO`).
 11. Configure synchronization (team logos to scoreboard, VPN config): enable root's cronjob on VPN server and enable saarctf's cronjob on controller.
+12. Create a config for the orga VPN: `python3 vpn/build-openvpn-orga-multi.py`
+13. Ensure all VPN servers are running (more work on this required)
 
 
 #### Configure Services
@@ -57,7 +59,7 @@ Once ready, you can **setup the services** on the controller:
 2. Git clone all repos with checker scripts to a folder in `/home/saarctf/checkers`, use user account "saarctf" for that. 
 3. Add the service to the `services` table using `/root/postgres-psql.sh`. See `services.sql` in the configuration repo.
 4. Check that the service is recognized in the control panel. 
-5. Add all service to `/etc/ports.conf` on the VPN server,so that their traffic will be monitored and accounted.
+5. Add all service to `/root/ports.conf` on the VPN server, so that their traffic will be monitored and accounted.
 
 
 #### Synchronize teams
@@ -79,27 +81,27 @@ The existing servers will be upscaled, redundancy and checkers will be added.
 These steps involve a downtime of a few minutes, existing VPN connections will break.
 What we will build: 
 
-- 1x CCX41 Controller
-- 1x CX51  Backup (of controller)
-- 1x CCX41 VPN Gateway
-- ?x CX51  Checker
+- 1x CCX31 Controller
+- 1x CX21  Backup (of controller)
+- 1x CCX51 VPN Gateway
+- ?x CPX41  Checker (2021 we had 1x CPX41 for all services, +1x CPX51 for Chromium)
 
 
 1. Close the registration and complete the synchronization steps above a final time. 
 2. On the controller server open the control panel and create a first scoreboard.
-3. In the cloud control panel, create a new volume (for pcaps). I suggest at least 1TB. 
-4. Create the backup/monitoring server: Spawn a new server from the controller image, type CX51 or so, choose to have a larger disk. 
+3. In the cloud control panel, create a new volume (for pcaps). I suggest at least 1TB, better 2TB. 
+4. Create the backup/monitoring server: Spawn a new server from the controller image, type CX21 or so, choose to have a larger disk. 
 5. Once the backup server is up, run `/root/failover-set-slave.sh`
-6. Shutdown VPN server, then Controller server. 
+6. Shutdown VPN server, call `python3 vpn/reset-connection-status.py` on controller server, then shutdown Controller server. 
 7. Add the Volume from (3) to the VPN server. 
-8. Rescale Controller and VPN server (for example to CCX41). Start with Controller (which needs the additional disk space). 
-9. Once both are up again reset connectivity status (`vpn/reset-connection-status.py` on VPN server), mention restart in IRC, and check that the replication databases from the backup system are reconnecting. Also check that Controller and Backup have their additional disk space (if not try `resize2fs /dev/sda1`). 
-10. Mount the volume on the VPN server (follow instructions on Hetzner page).
-11. Create folders and symlinks: `mkdir -p /mnt/pcaps/gametraffic /mnt/pcaps/teamtraffic ; ln -s /mnt/pcaps/gametraffic /tmp/ ; ln -s /mnt/pcaps/teamtraffic /tmp/`
+8. Rescale Controller and VPN server (for example to CCX31/CCX51). Start with Controller (which might need the additional disk space). 
+9. Once both are up again mention restart in IRC, and check that the replication databases from the backup system are reconnecting. Also check that Controller and Backup have their additional disk space (if not try `resize2fs /dev/sda1`). 
+10. Mount the volume on the VPN server (follow instructions on Hetzner page). Check twice it's mounted to `/mnt/pcaps`, if not: edit `/etc/fstab`, unmount and do `mount -a`.
+11. Create folders and symlinks: `mkdir -p /mnt/pcaps/gametraffic /mnt/pcaps/teamtraffic /mnt/pcaps/temptraffic ; ln -s /mnt/pcaps/gametraffic /tmp/ ; ln -s /mnt/pcaps/teamtraffic /tmp/ ; ln -s /mnt/pcaps/temptraffic /tmp/ ; chown nobody:group /mnt/pcaps/*traffic`
 12. On the VPN server start tcpdump (`systemctl start tcpdump-game tcpdump-team`) and check that the pcaps are stored on the mounted volume. 
 13. Start the CTF timer on the Controller server (`systemctl start ctftimer`) and check the results in dashboard. There should be no warning. 
 14. On the backup server, enable the Scoreboard daemon (`systemctl start scoreboard`). 
-15. Create some checker servers from the checker snapshot, CX51, disk doesn't matter. Connect to each new checker server and run `celery-configure <server-number>`.
+15. Create some checker servers from the checker snapshot, CPX41 or CPX51, disk doesn't matter. Connect to each new checker server and run `celery-configure <server-number>`. Check that the number of threads is appropriate.
 16. Install all missing dependencies on the checker servers. Check that the celery workers are connecting. 
 17. Go to the backup/monitoring server. Use `/root/prometheus-add-server.sh <ip>` to add: controller server, vpn server, all checker servers.
 18. Open Grafana and check that you receive data from all servers, and all are healty.

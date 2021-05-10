@@ -61,6 +61,8 @@ is_hetzner && (
 
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
+    ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -304,6 +306,10 @@ server {
         add_header Cache-Control "max-age=0, public, must-revalidate";
     }
 
+    location /team/ {
+        try_files $uri $uri/ /index.html;
+    }
+
     location ~* \.(?:js|css|svg|woff|woff2|eot|ttf)$ {
         # cache: js/css/svg/woff/woff2/eot/ttf 1d
         add_header Cache-Control "max-age=86400, public, must-revalidate";
@@ -407,12 +413,14 @@ systemctl enable submission-server
 
 
 # Configure cronjob to recreate scoreboard
-( sudo -u saarctf crontab -l; cat - <<'EOF' ) | sudo -u saarctf crontab -
+crontab -u saarctf -l > /dev/shm/crontab || echo "" > /dev/shm/crontab
+cat - <<'EOF' >> /dev/shm/crontab
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME=/home/saarctf
 
-# 10 */4 * * *  python3 /opt/gameserver/scripts/recreate_scoreboard.py > /home/saarctf/recreate_scoreboard.log 2>&1
+# */15 * * * *  python3 /opt/gameserver/scripts/recreate_scoreboard.py > /home/saarctf/recreate_scoreboard.log 2>&1
 EOF
+crontab -u saarctf /dev/shm/crontab
 
 
 # Running:

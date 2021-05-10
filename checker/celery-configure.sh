@@ -22,6 +22,9 @@ is_virtualbox() {
 HOST_NUMBER="$1"
 
 sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}|" /etc/celery.conf
+sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}-selenium|" /etc/celery-selenium.conf
+sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$((3*$(nproc)))|" /etc/celery.conf
+sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$(nproc)}|" /etc/celery-selenium.conf
 is_virtualbox && (
   sed -i -E "s|-checker-\w+|-checker-${HOST_NUMBER}|g" /etc/hostname
   sed -i -E "s|-checker-\w+|-checker-${HOST_NUMBER}|g" /etc/hosts
@@ -47,3 +50,5 @@ systemctl start celery
 sleep 1
 systemctl status celery
 echo "Done."
+echo "Service celery: $(grep 'CELERYD_CONCURRENCY' /etc/celery.conf)"
+echo "Service celery-selenium: $(grep 'CELERYD_CONCURRENCY' /etc/celery-selenium.conf) (disabled by default)"

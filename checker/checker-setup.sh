@@ -39,6 +39,8 @@ is_hetzner && (
 
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
+    ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -56,6 +58,8 @@ pip3 install -r /opt/gameserver/requirements-script.txt
 useradd saarctf -m -U -s "/bin/bash"
 echo 'source /etc/profile.d/env.sh' >> /home/saarctf/.profile
 echo 'source /etc/profile.d/env.sh' >> /home/saarctf/.bashrc
+mkdir -p /home/saarctf/checker_cache
+chown -R saarctf:saarctf /home/saarctf/checker_cache
 
 
 
@@ -77,16 +81,28 @@ ExecStop=/bin/sh -c 'python3 -m celery multi stopwait ${CELERYD_NODES} --pidfile
 ExecReload=/bin/sh -c 'python3 -m celery -A checker_runner multi restart ${CELERYD_NODES} -Ofair -E -Q celery,broadcast \
 	--pidfile=/var/run/celery/%n.pid --logfile="/var/log/celery/%n%I.log" --loglevel=${CELERYD_LOG_LEVEL} --concurrency=${CELERYD_CONCURRENCY} ${CELERYD_OPTS}'
 RuntimeDirectory=celery
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
 EOF
+cp /etc/systemd/system/celery.service /etc/systemd/system/celery-selenium.service
+sed -i 's|celery.conf|celery-selenium.conf|' /etc/systemd/system/celery-selenium.service
+sed -i 's|celery,broadcast|selenium|g' /etc/systemd/system/celery-selenium.service
 
 
 echo 'CELERYD_NODES=worker1' > /etc/celery.conf
 echo 'CELERYD_CONCURRENCY="16"' >> /etc/celery.conf
 echo 'CELERYD_LOG_LEVEL=INFO' >> /etc/celery.conf
 echo 'CELERYD_OPTS="--time-limit=60"' >> /etc/celery.conf
+echo 'SAARCTF_CACHE_PATH=/home/saarctf/checker_cache' >> /etc/celery.conf
+echo 'CELERYD_NODES=worker1-selenium' > /etc/celery-selenium.conf
+echo 'CELERYD_CONCURRENCY="4"' >> /etc/celery-selenium.conf
+echo 'CELERYD_LOG_LEVEL=INFO' >> /etc/celery-selenium.conf
+echo 'CELERYD_OPTS="--time-limit=60"' >> /etc/celery-selenium.conf
+echo 'SAARCTF_CACHE_PATH=/home/saarctf/checker_cache' >> /etc/celery-selenium.conf
+echo 'SAARCTF_NO_RLIMIT=1' >> /etc/celery-selenium.conf
+
 
 
 mkdir /var/log/celery

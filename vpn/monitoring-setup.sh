@@ -65,6 +65,9 @@ tcp:22
 tcp:80
 tcp:31337
 EOF
+if [ -f "$SAARCTF_CONFIG_DIR/ports.conf" ]; then
+  cp "$SAARCTF_CONFIG_DIR/ports.conf" /root/ports.conf
+fi
 
 cat <<'EOF' > /etc/systemd/system/conntrack-accounting.service
 [Unit]

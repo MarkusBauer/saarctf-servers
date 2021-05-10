@@ -47,6 +47,8 @@ is_hetzner && (
 
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
+    ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -67,9 +69,13 @@ apt-get clean
 # Enable IPv4 forwarding / eBPF JIT
 echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 echo 'net.core.bpf_jit_enable=1' >> /etc/sysctl.conf
-echo 'net.netfilter.nf_conntrack_max=16777216' >> /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_max=33554432' >> /etc/sysctl.conf
 echo 'net.netfilter.nf_conntrack_expect_max=8192' >> /etc/sysctl.conf
-echo 'net.netfilter.nf_conntrack_tcp_timeout_established=1800' >> /etc/sysctl.conf
+echo 'net.netfilter.nf_conntrack_tcp_timeout_established=1200' >> /etc/sysctl.conf
+echo 'net.core.rmem_max=671088640' >> /etc/sysctl.conf
+echo 'net.core.rmem_default=671088640' >> /etc/sysctl.conf
+echo 'net.core.wmem_max=671088640' >> /etc/sysctl.conf
+echo 'net.core.wmem_default=671088640' >> /etc/sysctl.conf
 echo '@reboot root /usr/bin/echo 65536 > /sys/module/nf_conntrack/parameters/hashsize' > /etc/crontab
 
 
@@ -254,7 +260,9 @@ EOF
 
 mkdir -p /var/log/vpn
 ln -s "$SAARCTF_CONFIG_DIR/vpn/vpn.service" /etc/systemd/system/vpn.service
+ln -s "$SAARCTF_CONFIG_DIR/vpn/vpncloud.service" /etc/systemd/system/vpncloud.service
 systemctl enable vpn || true
+systemctl enable vpncloud || true
 
 
 
@@ -318,6 +326,8 @@ ExecStop=/bin/sh -c 'python3 -m celery multi stopwait ${CELERYD_NODES} --pidfile
 ExecReload=/bin/sh -c 'python3 -m celery multi restart ${CELERYD_NODES} -A vpnboard -Ofair -E -Q vpnboard \
 	--pidfile=/var/run/celery/vpn-%n.pid --logfile="/var/log/celery/vpn-%n%I.log" --loglevel=${CELERYD_LOG_LEVEL} --concurrency=${CELERYD_CONCURRENCY} ${CELERYD_OPTS}'
 RuntimeDirectory=celery
+Restart=on-failure
+RestartSec=20s
 
 [Install]
 WantedBy=multi-user.target
@@ -332,13 +342,20 @@ systemctl enable vpnboard-celery
 
 
 # Crontab entry to synchronize teams - enable once ready
-( crontab -l; cat - <<'EOF' ) | crontab -
+crontab -l > /dev/shm/crontab || echo "" > /dev/shm/crontab
+cat - <<'EOF' >> /dev/shm/crontab
 PATH=/opt/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 SHELL=/bin/bash
 HOME=/root
 
 # 5 */4 * * *  /root/configs-create.sh > /var/log/configs-create.log 2>&1
+# */3 * * * *  /root/teams-sync.sh > /var/log/teams-sync.log 2>&1
 EOF
+crontab /dev/shm/crontab
+
+
+# Fix prometheus so that we see our /mnt/pcaps dir
+echo 'ARGS="--collector.filesystem.ignored-mount-points=\"^/(dev|proc|run|sys|media|var/lib/docker)($|/)\""' >> /etc/default/prometheus-node-exporter
 
 
 
