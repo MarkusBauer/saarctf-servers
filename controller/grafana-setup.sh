@@ -63,7 +63,7 @@ echo "MQ_PASSWORD=$MQ_PASSWORD" >> /etc/default/telegraf
 python3 -m pip install -r /opt/srvstatus/requirements.txt
 cat - > /opt/srvstatus/settings.ini <<'EOF'
 [SERVICES]
-name = ctftimer.service flower.service grafana-server.service influxdb.service nginx.service postgresql@11-main.service prometheus-node-exporter.service prometheus.service rabbitmq-server.service redis-server.service ssh.service submission-server.service telegraf.service uwsgi.service
+name = ctftimer.service flower.service grafana-server.service influxdb.service nginx.service postgresql@13-main.service prometheus-node-exporter.service prometheus.service rabbitmq-server.service redis-server.service ssh.service submission-server.service telegraf.service uwsgi.service
 EOF
 
 
@@ -72,12 +72,16 @@ EOF
 add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
 wget -q -O - https://packages.grafana.com/gpg.key | apt-key add -
 apt-get update
-apt-get install -y grafana
+apt-get install -y grafana crudini sqlite3
 grafana-cli plugins install vonage-status-panel
 
 sed -i "s/^;admin_user =.*\$/admin_user = $GRAFANA_USERNAME/" /etc/grafana/grafana.ini
 sed -i "s/^;admin_password =.*\$/admin_password = $GRAFANA_PASSWORD/" /etc/grafana/grafana.ini
 sed -i 's/^;;allow_sign_up =.*$/;allow_sign_up = false/' /etc/grafana/grafana.ini
+crudini --set /etc/grafana/grafana.ini unified_alerting enabled true
+crudini --set /etc/grafana/grafana.ini alerting enabled false
+crudini --set /etc/grafana/grafana.ini server domain 'cp.ctf.saarland'
+crudini --set /etc/grafana/grafana.ini server root_url 'https://cp.ctf.saarland:8445/'
 
 mkdir -p /var/lib/grafana/dashboards
 chown grafana:grafana /var/lib/grafana/dashboards
@@ -88,6 +92,8 @@ sed -i "s|PG_USERNAME|$PG_USERNAME|" /etc/grafana/provisioning/datasources/grafa
 sed -i "s|PG_PASSWORD|$PG_PASSWORD|" /etc/grafana/provisioning/datasources/grafana-datasources.yml
 sed -i "s|HTACCESS_USERNAME|$HTACCESS_USERNAME|" /etc/grafana/provisioning/notifiers/grafana-notifiers.yml
 sed -i "s|HTACCESS_PASSWORD|$HTACCESS_PASSWORD|" /etc/grafana/provisioning/notifiers/grafana-notifiers.yml
+sed -i "s|HTACCESS_USERNAME|$HTACCESS_USERNAME|" /tmp/grafana-alerts.sql
+sed -i "s|HTACCESS_PASSWORD|$HTACCESS_PASSWORD|" /tmp/grafana-alerts.sql
 mv /tmp/grafana-dashboard-*.json /var/lib/grafana/dashboards/
 sed -i 's|${DS_CTF_DB}|CTF DB|' /var/lib/grafana/dashboards/*_psql.json
 sed -i 's|${DS_INFLUXDB}|InfluxDB|' /var/lib/grafana/dashboards/*_psql.json
@@ -113,6 +119,11 @@ EOF
 systemctl enable grafana-server
 systemctl start grafana-server
 
+# modify database
+sleep 3
+systemctl stop grafana-server
+sqlite3 cat /tmp/grafana-alerts.sql | sudo -u grafana sqlite3 /var/lib/grafana/grafana.db
+
 
 # Install Prometheus monitoring
 apt-get install -y prometheus
@@ -126,9 +137,8 @@ echo '      - targets: ["localhost:3000"]' >> /etc/prometheus/prometheus.yml
 # Install nginx SSL frontend
 cat <<'EOF' > /etc/nginx/sites-available/grafana-ssl
 server {
-    listen 8445;
+    listen 8445 ssl;
     server_name cp.ctf.saarland;
-    ssl on;
     ssl_certificate /opt/config/certs/fullchain.pem;
     ssl_certificate_key /opt/config/certs/privkey.pem;
     location / {

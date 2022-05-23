@@ -16,7 +16,7 @@ See [Configuration](configuration.md) for details.
 
 
 To prepare server images (in VirtualBox for tests):
-- `cd debian ; packer build -var-file=../config.json -only=virtualbox-iso buster.json`
+- `cd debian ; packer build -var-file=../config.json -only=virtualbox-iso bullseye.json`
 - `cd basis ; packer build -var-file=../config.json -only=virtualbox-ovf basis.json`
 - `cd controller ; packer build -var-file=../config.json -only=virtualbox-ovf controller.json`
 - `cd vpn ; packer build -var-file=../config.json -only=virtualbox-ovf vpn.json`
@@ -128,9 +128,18 @@ OpenVPN configuration files should be (re)built at least once on this machine.
 
 
 ### 2.1 OpenVPN servers
-One server per team, managed by systemd. Service name is `vpn@teamXYZ`. 
-- Server for Team X listening on `<ip>:10000+X (udp)`
-- Interface of Team X: `tunX`
+Three servers per team, managed by systemd. Service name is:
+1. `vpn@teamXYZ` (tunX) for the single, self-hosted VPN (whole /24 in one connection)
+2. `vpn2@teamXYZ-cloud` (tun100X) for the cloud-hosted team members endpoint (upper /25, multiple connections possible)
+3. `vpn@teamXYZ-vulnbox` (tun200X) for the single, cloud-hosted vulnbox connection (/30 for cloud box, config not given to players)
+
+Activation rules:
+1. `vpn@teamX-vulnbox` is always active (players can't mess too much with it, except by booting a vulnbox)
+2. If `vpn@teamX-vulnbox` is connected, team-hosted vpn `vpn@teamX` is down (avoiding conflicts with team members using the old config)
+3. If `vpn@teamX` is connected, cloud-hosted player vpn `vpn2@teamX-cloud` is down (avoid both configs being used at the same time)
+
+- Server for Team X listening on `<ip>:10000+X / <ip>:12000+X / <ip>:1400+X (udp)`
+- Interface of Team X: `tunX` / `tun100X` / `tun200X`
 - Start one / all: `systemctl start vpn@teamX` / `systemctl start vpn`
 - Restart one / all: `systemctl restart vpn@teamX` / `systemctl restart vpn vpn@\*`
 - Stop one / all: `systemctl stop vpn@teamX` / `systemctl stop vpn vpn@\*`

@@ -43,13 +43,16 @@ We will now prepare server images and setup VPN servers (to test against).
    - `cp.ctf.saarland` can point to Controller or to a failover Controller server (to be added later)
 8. Let's configure SSL:
    1. if necessary: on saarsec server copy the certs to the configuration repo (`cp -L /etc/letsencrypt/live/ctf.saarland/* /opt/saarctf-config/certs/`) and push.
-   2. Pull repo on Controller and Vpn server server
+   2. Pull repo on Controller and Vpn server server (in `/opt/config`)
    3. Run `~/nginx-enable-ssl.sh` on Controller and VPN server
 9. Check that [https://scoreboard.ctf.saarland](https://scoreboard.ctf.saarland) and [https://vpn.ctf.saarland](https://vpn.ctf.saarland) both have meaningful output. If scoreboard bugs issue `update-server` on Controller. If Flower / RabbitMQ bug issue `~/rabbitmq-setup.sh`. 
 10. Enable the link to scoreboard on the saarCTF website (`TODO`).
 11. Configure synchronization (team logos to scoreboard, VPN config): enable root's cronjob on VPN server and enable saarctf's cronjob on controller.
-12. Create a config for the orga VPN: `python3 vpn/build-openvpn-orga-multi.py`
+12. Create a config for the orga VPN: `cd /opt/gameserver ; python3 vpn/build-openvpn-orga-multi.py`
 13. Ensure all VPN servers are running (more work on this required)
+14. If you use cloud-hosting and want to auto-open the Hetzner Cloud Firewall:
+    - On VPN server, edit `/etc/systemd/system/manage-hetzner-firewall.service` and insert a cloud access token
+    - `systemctl enable manage-hetzner-firewall && systemctl start manage-hetzner-firewall`
 
 
 #### Configure Services
@@ -92,12 +95,12 @@ What we will build:
 3. In the cloud control panel, create a new volume (for pcaps). I suggest at least 1TB, better 2TB. 
 4. Create the backup/monitoring server: Spawn a new server from the controller image, type CX21 or so, choose to have a larger disk. 
 5. Once the backup server is up, run `/root/failover-set-slave.sh`
-6. Shutdown VPN server, call `python3 vpn/reset-connection-status.py` on controller server, then shutdown Controller server. 
+6. Shutdown VPN server, call `python3 vpn/reset-connection-status.py --all` on controller server, then shutdown Controller server. 
 7. Add the Volume from (3) to the VPN server. 
 8. Rescale Controller and VPN server (for example to CCX31/CCX51). Start with Controller (which might need the additional disk space). 
 9. Once both are up again mention restart in IRC, and check that the replication databases from the backup system are reconnecting. Also check that Controller and Backup have their additional disk space (if not try `resize2fs /dev/sda1`). 
 10. Mount the volume on the VPN server (follow instructions on Hetzner page). Check twice it's mounted to `/mnt/pcaps`, if not: edit `/etc/fstab`, unmount and do `mount -a`.
-11. Create folders and symlinks: `mkdir -p /mnt/pcaps/gametraffic /mnt/pcaps/teamtraffic /mnt/pcaps/temptraffic ; ln -s /mnt/pcaps/gametraffic /tmp/ ; ln -s /mnt/pcaps/teamtraffic /tmp/ ; ln -s /mnt/pcaps/temptraffic /tmp/ ; chown nobody:group /mnt/pcaps/*traffic`
+11. Create folders and symlinks: `mkdir -p /mnt/pcaps/gametraffic /mnt/pcaps/teamtraffic /mnt/pcaps/temptraffic ; ln -s /mnt/pcaps/gametraffic /tmp/ ; ln -s /mnt/pcaps/teamtraffic /tmp/ ; ln -s /mnt/pcaps/temptraffic /tmp/ ; chown nobody:nogroup /mnt/pcaps/*traffic`
 12. On the VPN server start tcpdump (`systemctl start tcpdump-game tcpdump-team`) and check that the pcaps are stored on the mounted volume. 
 13. Start the CTF timer on the Controller server (`systemctl start ctftimer`) and check the results in dashboard. There should be no warning. 
 14. On the backup server, enable the Scoreboard daemon (`systemctl start scoreboard`). 
@@ -105,10 +108,18 @@ What we will build:
 16. Install all missing dependencies on the checker servers. Check that the celery workers are connecting. 
 17. Go to the backup/monitoring server. Use `/root/prometheus-add-server.sh <ip>` to add: controller server, vpn server, all checker servers.
 18. Open Grafana and check that you receive data from all servers, and all are healty.
-19. You could do some final tests with the NOP team here (`TODO`).
+19. You could do some final tests with the NOP team here. In the dashboard, you can open the network for NOP team only, under Scripts, you can test the current checker scripts.
 20. Finally: Open the CTF controlpanel and set autostart and last round. Pay attention to the server's timezone.
 21. Watch the countdown for the game to start...
-22. Once the key is released (or shortly before), you can open `/etc/systemd/services/vpnboad.service` and add the command line argument `--check-vulnbox`. Run `systemctl restart vpnboard`
+
+
+
+### Key Announcement / Vulnbox Access
+1. Release the key: IRC/Website/Email/Twitter
+2. Cloud boxes become controllable by a time configured in the website. Check that that worked.
+3. In dashboard, press "Open Network within Teams" (so that remote teams get access to their boxes). Now external firewall opens also for cloud boxes, and vpnboard starts pinging these boxes.
+4. Check that vulnboxes come online in VPN Dashboard
+
 
 
 ### During CTF

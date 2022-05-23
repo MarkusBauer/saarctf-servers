@@ -48,7 +48,7 @@
     },
     {
       "type": "hcloud",
-      "image": "debian-10",
+      "image": "debian-11",
       "location": "fsn1",
       "server_type": "cx11",
       "server_name": "saarctf-basis",

@@ -18,5 +18,6 @@ git commit -m "New VPN configs" && git push || echo "commit skipped"
 
 systemctl daemon-reload
 systemctl restart vpn
+systemctl restart vpncloud
 
 echo "Done."

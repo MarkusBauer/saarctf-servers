@@ -661,7 +661,7 @@
           ],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  max(time) AS \"time\",\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(src_bytes + dst_bytes) AS \"bytes\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\nGROUP BY proto, port\nORDER BY proto, port",
+          "rawSql": "SELECT\n  max(time) AS \"time\",\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(src_bytes + dst_bytes) AS \"bytes\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\nGROUP BY proto, port\nORDER BY time, proto, port",
           "refId": "A",
           "select": [
             [

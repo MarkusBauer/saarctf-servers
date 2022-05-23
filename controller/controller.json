@@ -2,6 +2,8 @@
   "variables": {
     "vm_root_password": "",
     "ssh_authorized_private_keyfile": "",
+    "ssh_vulnbox_private_key": "",
+    "ssh_vulnbox_public_key": "",
     "postgresql_replication_password": null,
     "grafana_username": null,
     "grafana_password": null,
@@ -81,6 +83,16 @@
       "type": "file",
       "source": "../srvstatus",
       "destination": "/opt"
+    },
+    {
+      "type": "file",
+      "source": "../{{user `ssh_vulnbox_private_key`}}",
+      "destination": "/root/.ssh/vulnbox"
+    },
+    {
+      "type": "file",
+      "source": "../{{user `ssh_vulnbox_public_key`}}",
+      "destination": "/root/.ssh/vulnbox.pub"
     },
     {
       "type": "shell",

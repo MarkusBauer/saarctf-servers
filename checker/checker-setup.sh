@@ -40,7 +40,9 @@ is_hetzner && (
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
     ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
     ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    ip6tables -A INPUT -p icmpv6 -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -86,9 +88,14 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
+# custom configs for special services
 cp /etc/systemd/system/celery.service /etc/systemd/system/celery-selenium.service
 sed -i 's|celery.conf|celery-selenium.conf|' /etc/systemd/system/celery-selenium.service
 sed -i 's|celery,broadcast|selenium|g' /etc/systemd/system/celery-selenium.service
+cp /etc/systemd/system/celery.service /etc/systemd/system/celery-rawsocket.service
+sed -i 's|celery.conf|celery-rawsocket.conf|' /etc/systemd/system/celery-rawsocket.service
+sed -i 's|celery,broadcast|rawsocket|g' /etc/systemd/system/celery-rawsocket.service
+sed -i '18i AmbientCapabilities=CAP_NET_RAW' /etc/systemd/system/celery-rawsocket.service
 
 
 echo 'CELERYD_NODES=worker1' > /etc/celery.conf
@@ -96,12 +103,19 @@ echo 'CELERYD_CONCURRENCY="16"' >> /etc/celery.conf
 echo 'CELERYD_LOG_LEVEL=INFO' >> /etc/celery.conf
 echo 'CELERYD_OPTS="--time-limit=60"' >> /etc/celery.conf
 echo 'SAARCTF_CACHE_PATH=/home/saarctf/checker_cache' >> /etc/celery.conf
+# Selenium
 echo 'CELERYD_NODES=worker1-selenium' > /etc/celery-selenium.conf
 echo 'CELERYD_CONCURRENCY="4"' >> /etc/celery-selenium.conf
 echo 'CELERYD_LOG_LEVEL=INFO' >> /etc/celery-selenium.conf
 echo 'CELERYD_OPTS="--time-limit=60"' >> /etc/celery-selenium.conf
 echo 'SAARCTF_CACHE_PATH=/home/saarctf/checker_cache' >> /etc/celery-selenium.conf
 echo 'SAARCTF_NO_RLIMIT=1' >> /etc/celery-selenium.conf
+# Raw Sockets
+echo 'CELERYD_NODES=worker1-rawsocket' > /etc/celery-rawsocket.conf
+echo 'CELERYD_CONCURRENCY="8"' >> /etc/celery-rawsocket.conf
+echo 'CELERYD_LOG_LEVEL=INFO' >> /etc/celery-rawsocket.conf
+echo 'CELERYD_OPTS="--time-limit=60"' >> /etc/celery-rawsocket.conf
+echo 'SAARCTF_CACHE_PATH=/home/saarctf/checker_cache' >> /etc/celery-rawsocket.conf
 
 
 

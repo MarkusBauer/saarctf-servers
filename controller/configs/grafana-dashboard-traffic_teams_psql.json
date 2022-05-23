@@ -38,23 +38,39 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
-  "iteration": 1585322910748,
+  "id": 5,
+  "iteration": 1653086725609,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 5,
       "fillGradient": 0,
       "gridPos": {
@@ -79,9 +95,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -131,9 +148,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Network Throughput",
       "tooltip": {
         "shared": true,
@@ -142,33 +157,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "Bps",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -176,7 +182,16 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -200,9 +215,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -223,7 +239,7 @@
           ],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  max(time) AS \"time\",\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(src_bytes + dst_bytes) AS \"bytes\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto)\n  AND port IN ($port)\nGROUP BY proto, port\nORDER BY proto, port",
+          "rawSql": "SELECT\n  max(time) AS \"time\",\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(src_bytes + dst_bytes) AS \"bytes\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto)\n  AND port IN ($port)\nGROUP BY proto, port\nORDER BY time, proto, port",
           "refId": "A",
           "select": [
             [
@@ -260,9 +276,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Traffic per port (within timerange)",
       "tooltip": {
         "shared": false,
@@ -271,9 +285,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "series",
-        "name": null,
         "show": true,
         "values": [
           "total"
@@ -282,24 +294,17 @@
       "yaxes": [
         {
           "format": "decbytes",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -307,7 +312,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -336,9 +350,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -383,9 +398,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Bandwidth per Origin Team",
       "tooltip": {
         "shared": true,
@@ -394,33 +407,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "Bps",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -428,7 +432,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -457,9 +470,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -504,9 +518,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Bandwidth per Destination Team",
       "tooltip": {
         "shared": true,
@@ -515,33 +527,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "Bps",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -549,7 +552,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -574,9 +586,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -640,9 +653,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Open Connections",
       "tooltip": {
         "shared": true,
@@ -651,9 +662,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -662,22 +671,16 @@
           "format": "short",
           "label": "# connections",
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -685,7 +688,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -710,9 +722,10 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -767,9 +780,7 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Connection Count",
       "tooltip": {
         "shared": true,
@@ -778,33 +789,24 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "cps",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -812,7 +814,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CTF_DB}",
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -822,30 +833,31 @@
         "y": 17
       },
       "hiddenSeries": false,
-      "id": 11,
+      "id": 14,
       "interval": "15s",
       "legend": {
         "avg": false,
-        "current": false,
-        "max": false,
+        "current": true,
+        "max": true,
         "min": false,
         "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "8.5.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "connection time",
+          "alias": "connections",
           "color": "#5794F2"
         }
       ],
@@ -855,25 +867,147 @@
       "targets": [
         {
           "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
+          "group": [],
           "hide": false,
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(\"time\",$__interval),\n  sum(connection_times) / GREATEST(1, sum(connection_count)) AS \"connection time\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto) AND port in ($port)\nGROUP BY \"time\"\nORDER BY \"time\"",
+          "rawSql": "SELECT\n  $__timeGroupAlias(\"time\",$__interval),\n  sum(connection_count) / ($__interval_ms / 1000) AS \"connections\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto) AND port IN ($port)\nGROUP BY \"time\"\nORDER BY \"time\"",
           "refId": "A",
           "select": [
             [
               {
                 "params": [
-                  "open_connections"
+                  "src_bytes"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "vpn_traffic",
+          "timeColumn": "\"time\"",
+          "timeColumnType": "timestamptz",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            },
+            {
+              "datatype": "varchar",
+              "name": "",
+              "params": [
+                "src",
+                "=",
+                "'$src'"
+              ],
+              "type": "expression"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Connection Count",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "cps",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PB240D2FF1AD76564"
+          },
+          "format": "time_series",
+          "group": [
+            {
+              "params": [
+                "proto"
+              ],
+              "type": "column"
+            }
+          ],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  max(time) AS \"time\",\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(connection_count) AS \"connections\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto)\n  AND port IN ($port)\nGROUP BY proto, port\nORDER BY time, proto, port",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "src_bytes"
                 ],
                 "type": "column"
               },
@@ -885,7 +1019,7 @@
               },
               {
                 "params": [
-                  "open connections"
+                  "src_bytes"
                 ],
                 "type": "alias"
               }
@@ -904,10 +1038,142 @@
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
-      "title": "Average Connection Time",
+      "title": "Connections per port (within timerange)",
+      "tooltip": {
+        "shared": false,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "series",
+        "show": true,
+        "values": [
+          "total"
+        ]
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:108",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:109",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "PB240D2FF1AD76564"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "interval": "15s",
+      "legend": {
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.3",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "connections",
+          "color": "#5794F2"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PB240D2FF1AD76564"
+          },
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  $__timeGroupAlias(\"time\",$__interval),\n  CONCAT(proto, ' ', CASE WHEN port = -1 THEN '(other)' ELSE CONCAT(':', port) END) AS \"title\",\n  sum(connection_count) / ($__interval_ms / 1000) AS \"connections\"\nFROM vpn_traffic\nWHERE\n  $__timeFilter(\"time\")\n  AND src IN ($src)\n  AND dst IN ($dst)\n  AND proto IN ($proto) AND port IN ($port)\nGROUP BY \"time\", \"title\"\nORDER BY \"time\"",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "src_bytes"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "vpn_traffic",
+          "timeColumn": "\"time\"",
+          "timeColumnType": "timestamptz",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            },
+            {
+              "datatype": "varchar",
+              "name": "",
+              "params": [
+                "src",
+                "=",
+                "'$src'"
+              ],
+              "type": "expression"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Connection Count",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -915,46 +1181,50 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
-          "format": "ms",
-          "label": "# connections",
+          "$$hashKey": "object:180",
+          "format": "cps",
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
+          "$$hashKey": "object:181",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     }
   ],
   "refresh": false,
-  "schemaVersion": 22,
+  "schemaVersion": 36,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
         "allValue": "src",
-        "current": {},
-        "datasource": "${DS_CTF_DB}",
+        "current": {
+          "selected": false,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PB240D2FF1AD76564"
+        },
         "definition": "SELECT DISTINCT src FROM vpn_traffic",
         "hide": 0,
         "includeAll": true,
@@ -968,15 +1238,25 @@
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
         "allValue": "dst",
-        "current": {},
-        "datasource": "${DS_CTF_DB}",
+        "current": {
+          "selected": false,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PB240D2FF1AD76564"
+        },
         "definition": "SELECT DISTINCT dst FROM vpn_traffic",
         "hide": 0,
         "includeAll": true,
@@ -990,15 +1270,25 @@
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
         "allValue": "proto",
-        "current": {},
-        "datasource": "${DS_CTF_DB}",
+        "current": {
+          "selected": false,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PB240D2FF1AD76564"
+        },
         "definition": "SELECT DISTINCT proto FROM vpn_traffic",
         "hide": 0,
         "includeAll": true,
@@ -1012,15 +1302,25 @@
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
         "allValue": "port",
-        "current": {},
-        "datasource": "${DS_CTF_DB}",
+        "current": {
+          "selected": false,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "PB240D2FF1AD76564"
+        },
         "definition": "SELECT DISTINCT port FROM vpn_traffic",
         "hide": 0,
         "includeAll": true,
@@ -1034,7 +1334,6 @@
         "skipUrlSync": false,
         "sort": 3,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -1061,5 +1360,6 @@
   "timezone": "",
   "title": "Traffic Teams (psql)",
   "uid": "IdrV609Wk",
-  "version": 13
+  "version": 4,
+  "weekStart": ""
 }

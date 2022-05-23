@@ -12,13 +12,14 @@ datasources:
     "access": "proxy"
     "url": "localhost"
     "user": "PG_USERNAME"
-    "password": "PG_PASSWORD"
     "database": "saarctf"
     "basicAuth": false
     "isDefault": true
     "jsonData":
-      "postgresVersion": 1000
+      "postgresVersion": 1200
       "sslmode": "disable"
+    "secureJsonData":
+      "password": "PG_PASSWORD"
     "readOnly": false
 
   - "id": 2
@@ -45,7 +46,8 @@ datasources:
     "typeLogoUrl": "public/app/plugins/datasource/influxdb/img/influxdb_logo.svg"
     "access": "proxy"
     "url": "http://localhost:8086"
-    "password": "INFLUXDB_PASSWORD"
+    "secureJsonData":
+      "password": "INFLUXDB_PASSWORD"
     "user": "admin"
     "database": "saarctf"
     "basicAuth": false

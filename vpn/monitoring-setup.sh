@@ -33,7 +33,7 @@ EOF
 python3 -m pip install -r /opt/srvstatus/requirements.txt
 cat - > /opt/srvstatus/settings.ini <<'EOF'
 [SERVICES]
-name = conntrack-accounting.service conntrack-psql-insert.service firewall.service manage-iptables.service nginx.service prometheus-node-exporter.service ssh.service telegraf.service trafficstats.service vpnboard-celery.service vpnboard.service vpn.service vpnboard-celery.service tcpdump-team.service tcpdump-game.service
+name = conntrack-accounting.service conntrack-psql-insert.service firewall.service manage-iptables.service nginx.service prometheus-node-exporter.service ssh.service telegraf.service trafficstats.service vpnboard.service manage-hetzner-firewall.service tcpdump-team.service tcpdump-game.service
 EOF
 
 
@@ -78,7 +78,7 @@ After=network.target
 Type=simple
 User=root
 Group=root
-ExecStart=/opt/conntrack_accounting/conntrack_accounting_tool/conntrack_accounting -src=10.32.0.0/11 -src-group-mask=255.239.255.0 -dst=10.32.0.0/11 -dst-group-mask=255.239.255.0 -exclude-ip=10.32.250.1 -pipe=/tmp/conntrack_acct -output=/root/conntrack_data/new -ports=/root/ports.conf -track-open -interval=15
+ExecStart=/opt/conntrack_accounting/conntrack_accounting_tool/conntrack_accounting -src=10.32.0.0/11 -src-group-mask=255.239.255.0 -dst=10.32.0.0/11 -dst-group-mask=255.239.255.0 -exclude-ip=10.32.250.1 -include-icmp -pipe=/tmp/conntrack_acct -output=/root/conntrack_data/new -ports=/root/ports.conf -track-open -interval=15
 WorkingDirectory=/opt/conntrack_accounting
 StandardOutput=append:/var/log/conntrack_accounting.log
 StandardError=append:/var/log/conntrack_accounting.log

@@ -6,9 +6,8 @@ set -eu
 if grep -q 'server_name localhost' /etc/nginx/sites-available/scoreboard; then
 	# Insert SSL config
 sed -e '/server_name localhost;/r'<(cat - <<'EOF'
-    listen 443;
+    listen 443 ssl;
     server_name scoreboard.ctf.saarland;
-    ssl on;
     ssl_certificate /opt/config/certs/fullchain.pem;
     ssl_certificate_key /opt/config/certs/privkey.pem;
 
@@ -40,9 +39,8 @@ fi
 if grep -q 'listen 8080' /etc/nginx/sites-available/controlserver; then
 	# Insert SSL config
 sed -e '/server_name localhost;/r'<(cat - <<'EOF'
-    listen 443;
+    listen 443 ssl;
     server_name cp.ctf.saarland;
-    ssl on;
     ssl_certificate /opt/config/certs/fullchain.pem;
     ssl_certificate_key /opt/config/certs/privkey.pem;
 

@@ -22,7 +22,7 @@ systemctl disable influxdb
 # switch postgresql to standby mode
 systemctl stop postgresql
 mv /var/lib/postgresql/*/main /var/lib/postgresql/main_old
-PGPASSWORD=__REPLACE_PG_REPLICATION_PASSWORD__ pg_basebackup -h $PG_SERVER -U replicator -D /var/lib/postgresql/11/main -X stream -P
+PGPASSWORD=__REPLACE_PG_REPLICATION_PASSWORD__ pg_basebackup -h $PG_SERVER -U replicator -D /var/lib/postgresql/13/main -X stream -P
 cp /root/failover/recovery.conf /var/lib/postgresql/*/main/
 chown -R postgres:postgres /var/lib/postgresql/*/main/
 systemctl start postgresql

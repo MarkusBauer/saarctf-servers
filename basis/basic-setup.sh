@@ -13,7 +13,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get upgrade -y
 apt-get install -y \
-    sudo nano htop git bash-completion ntp ntpdate virt-what cloud-initramfs-growroot \
+    sudo nano htop git bash-completion ntp ntpdate virt-what cloud-initramfs-growroot gnupg gnupg2 \
     python3 python3-dev python3-pip python3-setuptools python3-wheel \
     python3-redis python3-psycopg2 \
     python3-flask python3-flask-api python3-flask-migrate python3-flask-restful \
@@ -23,7 +23,8 @@ apt-get install -y \
     python3-tornado python3-babel  \
     openvpn iptables iptables-persistent net-tools procps libbpf-dev iftop \
     postgresql-client redis-tools \
-    psutils curl wget screen rsync p7zip-full tcpdump man
+    psutils curl wget screen rsync p7zip-full tcpdump man silversearcher-ag \
+    libpq-dev python3-dev postgresql-server-dev-all zlib1g-dev libjpeg-dev libpng-dev build-essential
 apt-get install --no-install-recommends -y at prometheus-node-exporter
 apt-get clean
 # outdated: python3-flask-sqlalchemy 
@@ -32,7 +33,12 @@ systemctl enable prometheus-node-exporter
 
 # Configure Influx / Telegraf repository
 wget -qO- https://repos.influxdata.com/influxdb.key | apt-key add -
-echo "deb https://repos.influxdata.com/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/influxdb.list
+if wget "https://repos.influxdata.com/debian/dists/$(lsb_release -cs)/stable/" -O/dev/null -q; then
+  echo "deb https://repos.influxdata.com/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/influxdb.list
+else
+  echo "deb https://repos.influxdata.com/debian buster stable" > /etc/apt/sources.list.d/influxdb.list
+  echo "Warning: InfluxDB release for distribution $(lsb_release -cs) not found, using Debian Buster fallback."
+fi
 
 
 # Virtualbox only - configure network adapter
@@ -74,6 +80,7 @@ sudo chmod +x /usr/local/bin/rmate
 # configure git
 git config --global user.name "saarctf server"
 git config --global user.email "saarctf@saarsec.rocks"
+git config --global pull.rebase true
 
 # configure htop
 mkdir -p /root/.config/htop

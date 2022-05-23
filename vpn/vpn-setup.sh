@@ -48,7 +48,11 @@ is_hetzner && (
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
     ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT -m comment --comment "SSH"
+    ip6tables -A INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "HTTP / VPN-Board"
+    ip6tables -A INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "HTTPS / VPN-Board"
     ip6tables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+    ip6tables -A INPUT -p icmpv6 -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -61,7 +65,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y \
     openvpn easy-rsa iptables net-tools procps libbpf-dev iftop \
-    tcpdump tshark clang-7 \
+    tcpdump nmap tshark clang-11 \
     nginx telegraf
 apt-get clean
 
@@ -160,6 +164,36 @@ systemctl enable manage-iptables
 
 
 
+# Configure hetzner firewall manager
+cat <<'EOF' > /etc/systemd/system/manage-hetzner-firewall.service
+[Unit]
+Description=Hetzner firewall manager
+After=network.target
+After=firewall.service
+Requires=firewall.service
+PartOf=firewall.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=python3 vpn/manage-hetzner-firewall.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/firewall-hetzner.log
+StandardError=append:/var/log/firewall-hetzner.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+Environment="HCLOUD_TOKEN=TODO_TOKEN_NECESSARY_HERE"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+
 # TCPDump for game traffic and team traffic
 cat <<'EOF' > /etc/systemd/system/tcpdump-team.service
 [Unit]
@@ -197,7 +231,6 @@ Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
 Type=notify
 #PrivateTmp=true
 WorkingDirectory=/etc/openvpn/server
-#ExecStart=/usr/sbin/openvpn --status %t/openvpn-server/status-%i.log --status-version 2 --suppress-timestamps --config %i.conf
 ExecStart=/usr/sbin/openvpn --config %i.conf
 ExecStopPost=+/opt/gameserver/vpn/on-disconnect.sh %i
 #CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE CAP_AUDIT_WRITE
@@ -234,7 +267,6 @@ Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
 Type=notify
 #PrivateTmp=true
 WorkingDirectory=/etc/openvpn/server
-#ExecStart=/usr/sbin/openvpn --status %t/openvpn-server/status-%i.log --status-version 2 --suppress-timestamps --config %i.conf
 ExecStart=/usr/sbin/openvpn --config %i.conf
 #ExecStopPost=+/opt/gameserver/vpn/on-disconnect.sh %i
 #CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE CAP_AUDIT_WRITE
@@ -247,8 +279,8 @@ KillMode=process
 RestartSec=5s
 Restart=on-failure
 
-StandardOutput=append:/var/log/vpn/output-%i.log
-StandardError=append:/var/log/vpn/output-%i.log
+StandardOutput=append:/var/log/vpn/output-%i-cloud.log
+StandardError=append:/var/log/vpn/output-%i-cloud.log
 EnvironmentFile=/etc/environment
 Environment="PYTHONUNBUFFERED=1"
 Environment="PYTHONPATH=/opt/gameserver"
@@ -276,6 +308,7 @@ After=network.target
 Type=simple
 User=www-data
 Group=www-data
+AmbientCapabilities=CAP_NET_RAW
 # add "--check-vulnbox" to ping vulnboxes
 ExecStart=python3 vpnboard/vpn_board.py --daemon
 WorkingDirectory=/opt/gameserver
@@ -301,13 +334,18 @@ server {
     access_log "/var/log/nginx/vpnboard.log";
 
     etag on;
+
+    # auth_basic "saarCTF VPNBoard";
+    # auth_basic_user_file "$SAARCTF_CONFIG_DIR/htpasswd";
 }
 EOF
+sed -i "s|\$SAARCTF_CONFIG_DIR|$SAARCTF_CONFIG_DIR|" /etc/nginx/sites-available/vpnboard
 ln -s /etc/nginx/sites-available/vpnboard /etc/nginx/sites-enabled/
 mkdir -p /var/www/scoreboard
 chown www-data:www-data /var/www/scoreboard
 ln -s /var/www/scoreboard/vpn.html /var/www/scoreboard/index.html
 # configure celery
+# setcap 'cap_net_raw+ep' $(which nping)
 cat <<'EOF' > /etc/systemd/system/vpnboard-celery.service
 [Unit]
 Description=Celery Workers for saarCTF (VPNBoard)
@@ -317,6 +355,7 @@ After=network.target
 Type=forking
 User=www-data
 Group=www-data
+AmbientCapabilities=CAP_NET_RAW
 EnvironmentFile=/etc/environment
 EnvironmentFile=/etc/vpncelery.conf
 WorkingDirectory=/opt/gameserver
@@ -358,6 +397,11 @@ crontab /dev/shm/crontab
 echo 'ARGS="--collector.filesystem.ignored-mount-points=\"^/(dev|proc|run|sys|media|var/lib/docker)($|/)\""' >> /etc/default/prometheus-node-exporter
 
 
+# Recompile BPF tools
+cd /opt/gameserver/vpn/bpf
+make || >&2 echo "Warning: BPF objects could not be rebuilt!"
+
+
 
 
 # run iptables.sh on startup
@@ -377,10 +421,11 @@ echo -e "\e[2m===============================================\e[22m" >> /etc/mot
 echo -e "\nOther systemd services:" >> /etc/motd
 echo -e " - vpn / vpn@teamX  (openvpn servers)" >> /etc/motd
 echo -e " - vpncloud / vpn@teamX-vulnbox / vpn2@teamX-cloud  (openvpn servers, cloud mode)" >> /etc/motd
-echo -e " - firewall         (iptables ruleset)" >> /etc/motd
-echo -e " - manage-iptables  (vpn on/off script)" >> /etc/motd
-echo -e " - trafficstats     (statistics collector)" >> /etc/motd
-echo -e " - vpnboard         (vpn statistics website)" >> /etc/motd
-echo -e " - vpnboard-celery  (workers for vpnboard)" >> /etc/motd
+echo -e " - firewall                 (iptables ruleset)" >> /etc/motd
+echo -e " - manage-iptables          (vpn on/off script)" >> /etc/motd
+echo -e " - manage-hetzner-firewall  (cloud-hosted vulnbox access on/off script)" >> /etc/motd
+echo -e " - trafficstats             (statistics collector)" >> /etc/motd
+echo -e " - vpnboard                 (vpn statistics website)" >> /etc/motd
+echo -e " - vpnboard-celery          (workers for vpnboard)" >> /etc/motd
 echo -e " - conntrack-accounting / conntrack-psql-insert  (conntrack monitoring)" >> /etc/motd
 echo -e "\n" >> /etc/motd

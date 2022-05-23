@@ -62,7 +62,11 @@ is_hetzner && (
     ip6tables -A INPUT -i ens10 -j ACCEPT
     ip6tables -A INPUT -i enp7s0 -j ACCEPT
     ip6tables -A INPUT -i lo -j ACCEPT
+    ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT -m comment --comment "SSH"
+    ip6tables -A INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "HTTP / Scoreboard"
+    ip6tables -A INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "HTTPS / Scoreboard + CP"
     ip6tables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    ip6tables -A INPUT -p icmpv6 -j ACCEPT
     ip6tables -P INPUT DROP
 
     iptables-save > /etc/iptables/rules.v4
@@ -79,20 +83,26 @@ apt-get install -y \
     redis-server \
     rabbitmq-server \
     build-essential g++ cmake \
-    libev-dev libhiredis-dev libpq-dev libssl-dev postgresql-server-dev-11 \
+    libev-dev libhiredis-dev libpq-dev libssl-dev postgresql-server-dev-13 postgresql-server-dev-all \
     uwsgi uwsgi-plugin-gevent-python3 uwsgi-plugin-python3 \
     nodejs npm \
-    nginx apache2-utils php-fpm \
-    software-properties-common socat
+    nginx apache2-utils php-fpm php-zip unzip \
+    software-properties-common socat \
+    ansible
 apt-get clean
+
+
+# Fix permissions
+chmod 0600 /root/.ssh/*
 
 
 # Make user
 useradd saarctf -m -U -s "/bin/bash"
 echo 'source /etc/profile.d/env.sh' >> /home/saarctf/.profile
 echo 'source /etc/profile.d/env.sh' >> /home/saarctf/.bashrc
-mkdir -p /home/saarctf/checkers /home/saarctf/.ssh
+mkdir -p /home/saarctf/checkers /home/saarctf/.ssh /home/saarctf/checkers/patches
 cp /root/.ssh/id_rsa* /home/saarctf/.ssh/
+cp /root/.ssh/vulnbox* /home/saarctf/.ssh/
 chown -R saarctf:saarctf /home/saarctf/checkers /home/saarctf/.ssh
 cd /
 sudo -u saarctf -H git config --global user.name "saarctf server"
@@ -184,6 +194,7 @@ ln -s /usr/local/bin/update-server ~/update-server.sh
 cat <<EOF > /etc/uwsgi/apps-available/controlserver.ini
 [uwsgi]
 env = SAARCTF_CONFIG_DIR=$SAARCTF_CONFIG_DIR
+env = HOME=/home/saarctf
 chdir = /opt/gameserver/
 mount = /=controlserver.app:app
 plugin = python3
@@ -270,9 +281,8 @@ server {
 EOF
 cat <<'EOF' > /etc/nginx/sites-available/flower-ssl
 server {
-    listen 8443;
+    listen 8443 ssl;
     server_name cp.ctf.saarland;
-    ssl on;
     ssl_certificate /opt/config/certs/fullchain.pem;
     ssl_certificate_key /opt/config/certs/privkey.pem;
     location / {
@@ -301,6 +311,13 @@ server {
    
     etag on;
 
+    # auth_basic "saarCTF Scoreboard";
+    # auth_basic_user_file "$SAARCTF_CONFIG_DIR/htpasswd";
+
+    location /patches/ {
+        root /var/www/;
+    }
+
     location /api/ {
         # cache: json never
         add_header Cache-Control "max-age=0, public, must-revalidate";
@@ -328,9 +345,10 @@ server {
     }
 }
 EOF
+sed -i "s|\$SAARCTF_CONFIG_DIR|$SAARCTF_CONFIG_DIR|" /etc/nginx/sites-available/scoreboard
 ln -s /etc/nginx/sites-available/scoreboard /etc/nginx/sites-enabled/
-mkdir /var/www/scoreboard
-chown saarctf:saarctf /var/www/scoreboard
+mkdir /var/www/scoreboard /var/www/patches
+chown saarctf:saarctf /var/www/scoreboard /var/www/patches
 
 
 
