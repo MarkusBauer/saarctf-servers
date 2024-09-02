@@ -1,0 +1,20 @@
+[Unit]
+Description=Traffic Statistics Collector
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=gspython vpn/manage-trafficstats.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/trafficstats.log
+StandardError=append:/var/log/trafficstats.log
+Restart=on-failure
+RestartSec=20s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+
+[Install]
+WantedBy=multi-user.target

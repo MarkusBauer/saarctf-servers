@@ -1,0 +1,22 @@
+[Unit]
+Description=VPN Status website
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+AmbientCapabilities=CAP_NET_RAW
+# add "--check-vulnbox" to ping vulnboxes
+ExecStart=gspython vpnboard/vpn_board.py --daemon
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/vpnboard-results.log
+StandardError=append:/var/log/vpnboard.log
+Restart=on-failure
+RestartSec=10s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+
+[Install]
+WantedBy=multi-user.target

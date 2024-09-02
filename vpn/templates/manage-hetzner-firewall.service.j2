@@ -1,0 +1,24 @@
+[Unit]
+Description=Hetzner firewall manager
+After=network.target
+After=firewall.service
+Requires=firewall.service
+PartOf=firewall.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=gspython vpn/manage-hetzner-firewall.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/firewall-hetzner.log
+StandardError=append:/var/log/firewall-hetzner.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+Environment="HCLOUD_TOKEN={{ participants_hcloud_token }}"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+# You might wonder why we are using this "dumb" script instead of just symlinking the interpreter.
+# The reason is that with this exec-approach sys.executable is the interpreter in the venv and sys.path is
+# configured appropriately for the venv
+# Whereas with a symlink, sys.executable is the path of the link itself and the sys.path is not configured properly
+
+# Ensure that we source the config dir from /etc/environment
+# Some programs - openvpn - run our scripts but don't pass env vars. :/
+. /etc/environment
+exec env SAARCTF_CONFIG_DIR=$SAARCTF_CONFIG_DIR "/opt/gameserver/venv/bin/python" "$@"

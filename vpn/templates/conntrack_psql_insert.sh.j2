@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+PG_SERVER=$(gspython /opt/gameserver/saarctf_commons/config.py get databases postgres server)
+PG_USERNAME=$(gspython /opt/gameserver/saarctf_commons/config.py get databases postgres username)
+PG_PASSWORD=$(gspython /opt/gameserver/saarctf_commons/config.py get databases postgres password)
+PG_DATABASE=$(gspython /opt/gameserver/saarctf_commons/config.py get databases postgres database)
+
+exec  {{ conntrack_accounting.local_repo }}/conntrack_psql_insert/psql_insert \
+-watch={{ conntrack_accounting.data_dir }}/new \
+-move={{ conntrack_accounting.data_dir }}/processed \
+-host=$PG_SERVER \
+-db=$PG_DATABASE \
+-user=$PG_USERNAME \
+-pass=$PG_PASSWORD

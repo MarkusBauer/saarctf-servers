@@ -1,0 +1,871 @@
+---
+- name: "Provision saarCTF controller image"
+  tags:
+    - grafana
+  hosts: default
+  become: true
+  vars:
+    fact_from_env:
+      - saarctf_config_dir
+      - postgres_replication_password
+      - grafana_username
+      - grafana_password
+      - icecoder_password
+      - htaccess_username
+      - htaccess_password
+      - ssh_vulnbox_private_key
+      - ssh_vulnbox_public_key
+    fact_to_config:
+      # Maps fact names to args for gameserver `config.py get <args>`
+      influx_server: "databases postgres server"
+      influxdb_password: "databases postgres password"
+      pg_server: "databases postgres server"
+      pg_username: "databases postgres username"
+      pg_password: "databases postgres password"
+      pg_database: "databases postgres database"
+      redis_host: "databases redis host"
+      redis_port: "databases redis "
+      redis_password: "databases redis password"
+      mq_host: "databases rabbitmq host"
+      mq_vhost: "databases rabbitmq vhost"
+      mq_username: "databases rabbitmq username"
+      mq_password: "databases rabbitmq password"
+  tasks:
+    - name: Set vars from env
+      ansible.builtin.set_fact:
+        "{{ item }}": "{{ lookup('env', item|upper) }}"
+      loop: "{{ fact_from_env }}"
+
+    - name: Copy scripts
+      copy:
+        src: scripts/
+        dest: /root
+        mode: "0700"
+
+    - name: Copy update-server.sh
+      copy:
+        src: update-server.sh
+        dest: /usr/local/bin/update-server
+        mode: u+rwx
+
+    - name: Pull /opt/config
+      ansible.builtin.shell:
+        chdir: /opt/config
+        cmd: git pull
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: saarctf-controller
+
+    - name: Install packages
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - postgresql
+          - redis-server
+          - rabbitmq-server
+          - build-essential
+          - g++
+          - cmake
+          - libev-dev
+          - libhiredis-dev
+          - libpq-dev
+          - libssl-dev
+          - postgresql-server-dev-15
+          - postgresql-server-dev-all
+          - uwsgi
+          - uwsgi-plugin-gevent-python3
+          - uwsgi-plugin-python3
+          - nodejs
+          - npm
+          - nginx
+          - apache2-utils
+          - php-fpm
+          - php-zip
+          - unzip
+          - software-properties-common
+          - socat
+          - ansible
+          - cron
+          - influxdb
+          - telegraf
+          - crudini
+          - prometheus
+          - python3-influxdb
+
+
+    - name: Install grafana
+      tags:
+        - grafana
+      block:
+        - name: Install necessary package
+          apt:
+            name: apt-transport-https
+            state: present
+            update_cache: yes
+
+        - name: Add Grafana GPG key
+          apt_key:
+            url: "https://apt.grafana.com/gpg.key"
+            keyring: /etc/apt/keyrings/grafana.gpg
+            state: present
+
+        - name: Add Grafana repository
+          apt_repository:
+            repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main"
+            state: present
+            filename: "grafana"
+            update_cache: yes
+
+        - name: Install old grafana version
+          apt:
+            name: grafana=10.1.5
+
+    - name: Configure saarctf user
+      block:
+        - name: Create saarctf user
+          user:
+            name: saarctf
+            shell: /bin/bash
+            system: yes
+            append: true
+
+        - name: Copy ssh files to saarctf user
+          ansible.builtin.copy:
+            remote_src: true
+            src: /root/.ssh
+            dest: /home/saarctf/
+            owner: saarctf
+            group: saarctf
+
+        - name: Add env.sh source to .profile
+          lineinfile:
+            create: true
+            path: /home/saarctf/.profile
+            line: 'source /etc/profile.d/env.sh'
+
+        - name: Add env.sh source to .bashrc
+          lineinfile:
+            create: true
+            path: /home/saarctf/.bashrc
+            line: 'source /etc/profile.d/env.sh'
+
+        - name: Create checker cache directory
+          file:
+            path: "/home/saarctf/{{ item }}"
+            state: directory
+            owner: saarctf
+            group: saarctf
+            mode: '0755'
+          loop:
+            - checkers
+            - checkers/patches
+
+        - name: Configure saarctf git user
+          become: yes
+          become_user: saarctf
+          git_config:
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+            scope: global
+          loop: "{{ config | dict2items }}"
+          vars:
+            config:
+              user.name: "saarctf server"
+              user.email: "saarctf@saarsec.rocks"
+
+    - name: Configure PostgreSQL and setup database
+      block:
+        - name: Find correct PostgreSQL config directory
+          shell: ls -d /etc/postgresql/*/main
+          register: pg_config_dir
+
+        - name: Add configurations to saarctf.conf
+          blockinfile:
+            path: "{{ pg_config_dir.stdout }}/conf.d/saarctf.conf"
+            block: |
+              max_connections = 500
+              listen_addresses = '*'
+            create: true
+
+        - name: Modify pg_hba.conf
+          lineinfile:
+            path: "{{ pg_config_dir.stdout }}/pg_hba.conf"
+            regexp: "^local.*all.*all.*peer"
+            state: absent
+
+        - name: Add local and host authentication to pg_hba.conf
+          lineinfile:
+            path: "{{ pg_config_dir.stdout }}/pg_hba.conf"
+            line: "{{ item }}"
+          loop:
+            - "local all all md5"
+            - "host all all all md5"
+
+    - name: Set config facts from gameserver conf
+      tags:
+        - grafana
+      include_tasks: ../fact_from_gameserver_conf.yml
+      loop: "{{ fact_to_config | dict2items }}"
+
+    - name: Configure replication
+      block:
+        - name: Find correct PostgreSQL config directory
+          shell: ls -d /etc/postgresql/*/main
+          register: pg_config_dir
+
+        - name: Create directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            owner: "{{ item.owner }}"
+            mode: "{{ item.mode }}"
+          loop:
+            - { path: "/root/failover", owner: "root", mode: "0755" }
+            - { path: "/srv/pg_archive", owner: "postgres", mode: "0700" }
+
+        - name: Add replication authentication to pg_hba.conf
+          lineinfile:
+            path: "{{ pg_config_dir.stdout }}/pg_hba.conf"
+            line: "host replication replicator all md5"
+
+        - name: Add replication configs to replication.conf
+          blockinfile:
+            path: "{{ pg_config_dir.stdout }}/conf.d/replication.conf"
+            block: |
+              wal_level = replica
+              archive_mode = on
+              archive_command = 'test ! -f /srv/pg_archive/%f && cp %p /srv/pg_archive/%f'
+              wal_log_hints = on
+              max_wal_senders = 3
+              hot_standby = on
+            create: true
+
+        - name: Restart PostgreSQL service
+          systemd:
+            name: postgresql
+            state: restarted
+
+    - name: Create recovery.service
+      ansible.builtin.template:
+        src: recovery.j2
+        dest: /root/failover/recovery.service
+
+    - name: Create PostgreSQL User, Database, and Replicator
+      become: true
+      become_user: postgres
+      block:
+        - name: Create PostgreSQL user
+          community.postgresql.postgresql_user:
+            name: "{{ item.name }}"
+            password: "{{ item.password }}"
+            state: present
+          loop:
+            - { name: "{{ pg_username }}", password: "{{ pg_password }}", priv: "ALL" }
+            - { name: "replicator", password: "{{ postgres_replication_password }}", replication: yes }
+        - name: Create PostgreSQL database
+          postgresql_db:
+            name: "{{ pg_database }}"
+            owner: "{{ pg_username }}"
+            state: present
+
+    - name: Restart PostgreSQL service
+      systemd:
+        name: postgresql
+        state: restarted
+
+    - name: Replace placeholder in file
+      replace:
+        path: /root/failover-set-slave.sh
+        regexp: "__REPLACE_PG_REPLICATION_PASSWORD__"
+        replace: "{{ postgres_replication_password }}"
+
+    - name: Configure Redis
+      block:
+        - name: Edit redis.conf
+          lineinfile:
+            path: /etc/redis/redis.conf
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+          loop:
+            - { regexp: "^bind .*", line: "bind 0.0.0.0" }
+            - { regexp: "# requirepass.*", line: "requirepass {{ redis_password }}" }
+        - name: Restart Redis
+          systemd:
+            name: redis
+            state: restarted
+
+    - name: Configure RabbitMQ
+      block:
+        - name: Execute RabbitMQ commands
+          shell: "{{ item.command }} {{ item.parameters }}"
+          loop:
+            - { command: "rabbitmqctl", parameters: "add_vhost '{{ mq_vhost }}'" }
+            - { command: "rabbitmqctl", parameters: "add_user '{{ mq_username }}' '{{ mq_password }}'" }
+            - { command: "rabbitmqctl", parameters: "set_permissions -p '{{ mq_vhost }}' '{{ mq_username }}' '.*' '.*' '.*'" }
+            - { command: "rabbitmqctl", parameters: "set_user_tags '{{ mq_username }}' administrator" }
+            - { command: "rabbitmq-plugins", parameters: "enable rabbitmq_management" }
+
+        - name: Restart RabbitMQ service
+          systemd:
+            name: rabbitmq-server
+            state: restarted
+
+    - name: Prepare Server Software
+      block:
+        - name: Run update-server with noerror
+          shell: update-server noerror
+          ignore_errors: yes
+          environment:
+            SAARCTF_POSTGRES_USE_SOCKET: True
+
+        - name: Create symlink to update-server.sh
+          file:
+            src: /usr/local/bin/update-server
+            dest: ~/update-server.sh
+            state: link
+
+    - name: Configure UWSGI / Control Panel
+      block:
+        - name: Create UWSGI config file
+          template:
+            src: controlserver.ini.j2
+            dest: /etc/uwsgi/apps-available/controlserver.ini
+
+        - name: Create symlink to enable uWSGI config
+          file:
+            src: /etc/uwsgi/apps-available/controlserver.ini
+            dest: /etc/uwsgi/apps-enabled/controlserver.ini
+            state: link
+
+        - name: Create directory
+          file:
+            path: /etc/systemd/system/uwsgi.service.d/
+            state: directory
+
+        - name: create uWSGI systemd service override file
+          copy:
+            src: override.conf
+            dest: /etc/systemd/system/uwsgi.service.d/override.conf
+
+    - name: Create flower service
+      tags:
+        - flower
+      block:
+        - name: Copy flower.service
+          copy:
+            src: flower.service
+            dest: /etc/systemd/system/flower.service
+
+        - name: Restart flower
+          systemd:
+            name: flower
+            state: restarted
+            enabled: true
+
+    - name: Configure Systemd services
+      copy:
+        src: "files/{{ item }}"
+        dest: "/etc/systemd/system/{{ item }}"
+      loop:
+        - ctftimer.service
+        - scoreboard.service
+        - submission-server.service
+
+    - name: Enable submission service
+      systemd:
+        name: submission-server
+        enabled: yes
+
+    - name: Configure cronjob to recreate scoreboard
+      block:
+        - name: Set crontab env vars
+          vars:
+            env_vars:
+              PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              HOME: /home/saarctf
+          ansible.builtin.cron:
+            env: yes
+            name: "{{ item.key }}"
+            value: "{{ item.value }}"
+          loop: "{{ env_vars | dict2items }}"
+
+        - name: Add configs-create crontab
+          ansible.builtin.cron:
+            user: saarctf
+            name: "recreate scoreboard"
+            minute: "*/15"
+            job: "/opt/gameserver/run.sh /opt/gameserver/scripts/recreate_scoreboard.py > /home/saarctf/recreate_scoreboard.log 2>&1"
+
+    - name: Copy motd
+      copy:
+        src: motd
+        dest: /etc/motd
+
+    - name: Install and setup icecoder
+      block:
+        - name: download ICEcoder
+          get_url:
+            url: https://github.com/icecoder/ICEcoder/archive/8.1.zip
+            dest: /tmp/icecoder.zip
+
+        - name: Create destination dir
+          file:
+            path: /tmp/icecoder
+            state: directory
+
+        - name: Unzip contents
+          unarchive:
+            src: /tmp/icecoder.zip
+            dest: /tmp/icecoder
+            remote_src: true
+
+        - name: Move executable
+          shell: mv /tmp/icecoder/ICE* /opt/icecoder
+
+        - name: Create backups directory
+          file:
+            path: /opt/icecoder/"{{ item }}"
+            state: directory
+            mode: "0757"
+            owner: saarctf
+            group: saarctf
+          loop:
+            - backup
+            - tmp
+
+        - name: Change data owner
+          file:
+            path: /opt/icecoder/data
+            owner: saarctf
+            group: saarctf
+
+    - name: Hash password
+      command: "php -r \"echo password_hash('{{ icecoder_password }}', PASSWORD_BCRYPT);\""
+      register: password_hash
+
+    - name: Set hash as fact
+      set_fact:
+        icecoder_hash: "{{ password_hash.stdout }}"
+
+    - name: Copy php files
+      template:
+        src: "icecoder/data/{{ item }}.j2"
+        dest: "/opt/icecoder/data/{{ item }}"
+      loop:
+        - config-global.php
+        - config-admin-_.php
+
+    - name: Create symlink for config
+      file:
+        src: /opt/icecoder/data/config-admin-_.php
+        dest: /opt/icecoder/data/config-admin-cp_ctf_saarland.php
+        state: link
+
+    - name: Get data php files
+      find:
+        paths: /opt/icecoder/data
+        patterns: "*.php"
+        recurse: true
+      register: data_php_files
+
+    - name: Change permissions
+      file:
+        path: "{{ item.path }}"
+        owner: saarctf
+        group: saarctf
+      loop: "{{ data_php_files.files }}"
+
+    - name: Patch requirements.php
+      replace:
+        path: /opt/icecoder/lib/requirements.php
+        regexp: "phpversion\\(\\)"
+        replace: "7.4"
+
+    - name: Add directory
+      lineinfile:
+        path: /opt/icecoder/lib/settings.php
+        line: '$ICEcoderDir = "/../../../../../..".$ICEcoderDir;'
+
+    - name: Get php sock
+      shell: echo /var/run/php/php*.*.sock
+      register: php_sock_output
+
+    - name: Set sock as fact
+      set_fact:
+        php_fpm_sock: "{{ php_sock_output.stdout_lines[0] }}"
+
+    - name: create sites-available directory
+      file:
+        path: /etc/nginx/sites-available/
+        state: directory
+
+    - name: copy sites-available/icecoder
+      template:
+        src: "nginx/sites-available/{{ item }}.j2"
+        dest: "/etc/nginx/sites-available/{{ item }}"
+      loop:
+        - icecoder
+        - icecoder-ssl
+
+    - name: create symlink for icecoder
+      file:
+        src: /etc/nginx/sites-available/icecoder
+        dest: /etc/nginx/sites-enabled/icecoder
+        state: link
+
+    - name: configer php fpm
+      block:
+        - name: Find correct php version directory
+          shell: ls /etc/php/
+          register: php_version_output
+
+        - name:
+          blockinfile:
+            path: "/etc/php/{{ php_version_output.stdout }}/fpm/pool.d/www.conf"
+            block: |
+              user = saarctf
+              group = saarctf
+              catch_workers_output = yes
+              php_admin_value[error_log] = /var/log/fpm-php.www.log
+              php_admin_flag[log_errors] = on
+            marker: "; {mark} ANSIBLE MANAGED BLOCK"
+
+        - name: Create the PHP-FPM log file
+          ansible.builtin.file:
+            path: /var/log/fpm-php.www.log
+            owner: saarctf
+            group: saarctf
+            state: touch
+
+    - name: Configure NGINX
+      tags:
+        - grafana
+      block:
+        - name: Add www-data group to saarctf
+          user:
+            name: www-data
+            groups: saarctf
+            append: yes
+
+        - name: Remove default NGINX site configuration
+          file:
+            path: /etc/nginx/sites-enabled/default
+            state: absent
+
+        - name: Upload nginx configs
+          template:
+            src: "nginx/sites-available/{{ item }}.j2"
+            dest: "/etc/nginx/sites-available/{{ item }}"
+          loop:
+            - controlserver
+            - flower-ssl
+            - grafana-ssl
+            - icecoder
+            - icecoder-ssl
+            - scoreboard
+
+        - name: Enable selected nginx configs
+          file:
+            src: "/etc/nginx/sites-available/{{ item }}"
+            dest: "/etc/nginx/sites-enabled/{{ item }}"
+            state: link
+          loop:
+            - controlserver
+            - icecoder
+            - scoreboard
+
+        - name: Create scoreboard and patches dirs
+          file:
+            path: "{{ item }}"
+            state: directory
+          loop:
+            - /var/www/scoreboard
+            - /var/www/patches
+
+        - name: Set ownership for scoreboard and patches directories
+          file:
+            path: "{{ item }}"
+            owner: saarctf
+            group: saarctf
+            recurse: yes
+          loop:
+            - /var/www/scoreboard
+            - /var/www/patches
+
+    - name: Start influxdb
+      systemd:
+        name: influxdb
+        state: restarted
+
+    - name: Set log level to "warn" in InfluxDB config
+      lineinfile:
+        path: /etc/influxdb/influxdb.conf
+        regexp: '^# level = .*'
+        line: 'level = "warn"'
+
+    - name: create admin user
+      community.general.influxdb_user:
+        user_name: admin
+        password: "{{ influxdb_password }}"
+        admin: true
+
+    - name: Set auth-enabled
+      lineinfile:
+        path: /etc/influxdb/influxdb.conf
+        regexp: '^# auth-enabled = false'
+        line: 'auth-enabled = true'
+
+    - name: create influx saarct database
+      community.general.influxdb_database:
+        database_name: saarctf
+
+    - name: Configure telegraf
+      block:
+        - name: Configure telegraf
+          replace:
+            path: /etc/telegraf/telegraf.conf
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: '  interval = [^\n]*', replace: '  interval = "15s"' }
+            - { regexp: '  collection_jitter = [^\n]*', replace: '  collection_jitter = "1s"' }
+            - { regexp: '\\[\\[outputs.influxdb\\]\\]', replace: '# [[outputs.influxdb]]' }
+
+        - name: Add telegraf to the adm group
+          user:
+            name: telegraf
+            groups: adm
+            append: yes
+
+    - name: Copy telegraf files
+      copy:
+        src: telegraf/
+        dest: /etc/telegraf/telegraf.d
+
+    - name: Template /etc/default/telegraf
+      template:
+        src: default-telegraf
+        dest: /etc/default/telegraf
+
+    - name: Setup srvstatus
+      block:
+        - name: Copy srvstatus files
+          ansible.builtin.copy:
+            src: ../srvstatus
+            dest: /opt
+
+        - name: Ensure srvstatus.sh is executable
+          ansible.builtin.file:
+            path: /opt/srvstatus/srvstatus.sh
+            mode: 'u=rwx,g=rx,o=rx'
+
+        - name: Copy srvstatus settings.ini
+          ansible.builtin.copy:
+            src: srvstatus-settings.ini
+            dest: /opt/srvstatus/settings.ini
+
+        - name: Install srvstatus deps
+          community.general.make:
+            chdir: /opt/srvstatus
+            target: deps
+
+    - name: Setup Grafana
+      tags:
+        - grafana
+      block:
+        - name: Install vonage-status-panel plugin
+          community.grafana.grafana_plugin:
+            name: vonage-status-panel
+
+        - name: Butcher Grafana configuration with replaces
+          ansible.builtin.replace:
+            path: /etc/grafana/grafana.ini
+            regexp: '{{ item.regexp }}'
+            replace: '{{ item.replace }}'
+          loop:
+            - { regexp: '^;admin_user =.*$', replace: 'admin_user = {{ grafana_username }}' }
+            - { regexp: '^;admin_password =.*$', replace: 'admin_password = {{ grafana_password }}' }
+            - { regexp: '^;;allow_sign_up =.*$', replace: ';allow_sign_up = false' }
+
+        - name: Set Grafana configuration using crudini
+          community.general.ini_file:
+            path: /etc/grafana/grafana.ini
+            section: '{{ item.section }}'
+            option: '{{ item.option }}'
+            value: '{{ item.value }}'
+          loop:
+            - { section: unified_alerting, option: enabled, value: true }
+            - { section: alerting, option: enabled, value: false }
+            - { section: server, option: domain, value: 'cp.ctf.saarland' }
+            - { section: server, option: root_url, value: 'https://cp.ctf.saarland:8445/' }
+
+        - name: Create Grafana dashboards directory and set ownership
+          ansible.builtin.file:
+            path: /var/lib/grafana/dashboards
+            state: directory
+            owner: grafana
+            group: grafana
+
+        - name: Copy grafana dashboards
+          copy:
+            src: "grafana/dashboards/"
+            dest: "/var/lib/grafana/dashboards/"
+
+        - name: Ensure grafana provisioning directories
+          file:
+            path: "/etc/grafana/provisioning/{{ item }}"
+            state: directory
+          loop:
+            - datasources
+            - notifiers
+            - alerting
+            - dashboards
+
+        - name: Template grafana provisioning files
+          template:
+            src: "{{ item.src }}"
+            dest: "/etc/grafana/provisioning/{{ item.dest }}"
+          loop:
+            - src: "grafana/saarctf-datasources.yml"
+              dest: "datasources/saarctf-datasources.yml"
+            - src: "grafana/saarctf-notifiers.yml"
+              dest: "notifiers/saarctf-notifiers.yml"
+
+        - name: Copy grafana provisioning files
+          copy:
+            src: "{{ item.src }}"
+            dest: "/etc/grafana/provisioning/{{ item.dest }}"
+          loop:
+            - src: grafana/saarctf-alerts.yml
+              dest: alerting/saarctf-alerts.yml
+            - src: grafana/saarctf-dashboards.yml
+              dest: dashboards/saarctf-dashboards.yml
+
+        - name: Get grafana dashboards from the interwebs
+          get_url:
+            url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/{{ item.revision }}/download"
+            dest: "/var/lib/grafana/dashboards/{{ item.name }}.json"
+          loop:
+            - { id: 928, name: telegraf_system, revision: 4 }
+            - { id: 8709, name: tig_metrics, revision: 2 }
+            - { id: 7626, name: postgresql, revision: 1 }
+            - { id: 6908, name: redis, revision: 1 }
+
+        - name: Edit dashboard files
+          replace:
+            path: "/var/lib/grafana/dashboards/{{ item.name }}.json"
+            regexp: "{{ item.regexp }}"
+            replace: "InfluxDB"
+          loop:
+            - { name: "telegraf_system", regexp: "\\${DS_INFLUXDB_TELEGRAF}" }
+            - { name: "tig_metrics", regexp: "\\${DS_TYPHON_TELEGRAPH_TYPHON}" }
+            - { name: "postgresql", regexp: "\\${DS_INFLUXDB}" }
+            - { name: "redis", regexp: "\\${DS_INFLUXDB}" }
+
+    - name: Funky systemd magic
+      tags:
+        - grafana
+      block:
+        - name: Enable Grafana service
+          systemd:
+            name: grafana-server
+            enabled: true
+
+        - name: Start Grafana service
+          systemd:
+            name: grafana-server
+            state: started
+
+        - name: Wait for 3 seconds
+          wait_for:
+            timeout: 3
+
+        - name: Stop grafana server
+          systemd:
+            name: grafana-server
+            state: stopped
+
+
+    - name: Configure prometheus
+      block:
+        - name: Copy prometheus defaults
+          copy:
+            src: default-prometheus
+            dest: /etc/default/prometheus
+
+        # TODO: This is ugly as fuck
+        - name: replace job_name
+          lineinfile:
+            path: /etc/prometheus/prometheus.yml
+            regexp: '^  - job_name: node$'
+            line: '  - job_name: node_localhost'
+
+        - name: append to yml file
+          blockinfile:
+            path: /etc/prometheus/prometheus.yml
+            insertafter: EOF
+            block: |1
+               - job_name: Grafana
+                 static_configs:
+                   - targets: ["localhost:3000"]
+
+    - name: iptables setup
+      block:
+        - name: configure iptables rules
+          ansible.builtin.iptables:
+            chain: INPUT
+            policy: "{{ item.policy | default(omit) }}"
+            in_interface: "{{ item.in_interface | default(omit) }}"
+            protocol: "{{ item.protocol | default(omit) }}"
+            destination_port: "{{ item.dport | default(omit) }}"
+            ctstate: "{{ item.state | default(omit) }}"
+            jump: "{{ item.jump | default(omit) }}"
+          loop:
+            # Accept anything from internal networks
+            - { in_interface: ens10, jump: ACCEPT }
+            - { in_interface: enp7s0, jump: ACCEPT }
+            - { in_interface: lo, jump: ACCEPT }
+            # Only allow those otherwise
+            - { protocol: TCP, dport: 22, jump: ACCEPT, comment: "SSH" }
+            - { protocol: TCP, dport: 80, jump: ACCEPT, comment: "HTTP / Scoreboard" }
+            - { protocol: TCP, dport: 443, jump: ACCEPT, comment: "HTTPS / Scoreboard + CP" }
+            - { protocol: TCP, dport: 3000, jump: ACCEPT, comment: "HTTP / Grafana" }
+            - { protocol: TCP, dport: 8080, jump: ACCEPT, comment: "HTTP / CP" }
+            - { protocol: TCP, dport: 8443, jump: ACCEPT, comment: "HTTPS  / Flower" }
+            - { protocol: TCP, dport: 8444, jump: ACCEPT, comment: "HTTPS / IceCoder" }
+            - { protocol: TCP, dport: 8445, jump: ACCEPT, comment: "HTTPS / Grafana" }
+            - { match: state, state: [ ESTABLISHED,RELATED ], jump: ACCEPT }
+            # Drop traffic by default
+            - { policy: DROP }
+
+        - name: configure ip6tables rules
+          ansible.builtin.iptables:
+            ip_version: ipv6
+            chain: INPUT
+            policy: "{{ item.policy | default(omit) }}"
+            in_interface: "{{ item.in_interface | default(omit) }}"
+            protocol: "{{ item.protocol | default(omit) }}"
+            destination_port: "{{ item.dport | default(omit) }}"
+            ctstate: "{{ item.state | default(omit) }}"
+            jump: "{{ item. jump | default(omit) }}"
+          loop:
+            - { in_interface: ens10, jump: ACCEPT }
+            - { in_interface: enp7s0, jump: ACCEPT }
+            - { in_interface: lo, jump: ACCEPT }
+            - { protocol: TCP, dport: 22, jump: ACCEPT, comment: "SSH" }
+            - { protocol: TCP, dport: 80, jump: ACCEPT, comment: "HTTP / Scoreboard" }
+            - { protocol: TCP, dport: 443, jump: ACCEPT, comment: "HTTPS / Scoreboard + CP" }
+            - { match: state, state: [ ESTABLISHED,RELATED ], jump: ACCEPT }
+            - { policy: DROP }
+
+        - name: save iptables rules
+          shell: iptables-save > /etc/iptables/rules.v4
+
+        - name: save ip6tables rules
+          shell: ip6tables-save > /etc/iptables/rules.v6
+
+    # Reset Cloud init, so it can do its magic in subsequent builds / boots
+    - name: Run cloud-init clean
+      ansible.builtin.shell:
+        cmd: cloud-init clean

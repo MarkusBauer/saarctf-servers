@@ -1,0 +1,5 @@
+standby_mode = 'on'
+recovery_target_timeline = 'latest'
+primary_conninfo = 'host={{ pg_server }} port=5432 user=replicator password={{ postgres_replication_password }}'
+# restore_command = 'cp /srv/pg_archive/%f %p'
+# archive_cleanup_command = 'pg_archivecleanup /srv/pg_archive %r'

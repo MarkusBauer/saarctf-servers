@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/vpnboard/;
+    access_log "/var/log/nginx/vpnboard.log";
+
+    etag on;
+
+    auth_basic "saarCTF VPNBoard";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+}

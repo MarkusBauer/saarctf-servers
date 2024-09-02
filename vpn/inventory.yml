@@ -1,0 +1,6 @@
+---
+all:
+  hosts:
+    default:
+      # Host name used for the vpn VM in your ssh config
+      ansible_host: vpn

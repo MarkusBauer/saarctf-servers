@@ -1,0 +1,21 @@
+[Unit]
+Description=Celery Workers for saarCTF
+After=network.target
+
+[Service]
+Type=forking
+User=saarctf
+Group=saarctf
+EnvironmentFile=/etc/environment
+EnvironmentFile=/etc/celery.conf
+WorkingDirectory=/opt/gameserver
+ExecStart=/bin/sh -c '/opt/gameserver/run.sh -m celery -A checker_runner.celery_cmd multi start ${CELERYD_NODES} -Ofair -E -Q celery,broadcast \
+	--pidfile=/var/run/celery/%n.pid --logfile="/var/log/celery/%n%I.log" --loglevel=${CELERYD_LOG_LEVEL} --concurrency=${CELERYD_CONCURRENCY} ${CELERYD_OPTS}'
+ExecStop=/bin/sh -c '/opt/gameserver/run.sh -m celery multi stopwait ${CELERYD_NODES} --pidfile=/var/run/celery/%n.pid'
+ExecReload=/bin/sh -c '/opt/gameserver/run.sh -m celery -A checker_runner.celery_cmd multi restart ${CELERYD_NODES} -Ofair -E -Q celery,broadcast \
+	--pidfile=/var/run/celery/%n.pid --logfile="/var/log/celery/%n%I.log" --loglevel=${CELERYD_LOG_LEVEL} --concurrency=${CELERYD_CONCURRENCY} ${CELERYD_OPTS}'
+RuntimeDirectory=celery
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

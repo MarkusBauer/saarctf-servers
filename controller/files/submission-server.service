@@ -1,0 +1,19 @@
+[Unit]
+Description=Flag submission server
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/opt/gameserver/flag-submission-server/build/flag-submission-server 31337 6
+WorkingDirectory=/opt/gameserver/flag-submission-server/build
+StandardOutput=append:/var/log/submission-server.log
+StandardError=append:/var/log/submission-server.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target

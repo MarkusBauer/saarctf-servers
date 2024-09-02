@@ -1,0 +1,20 @@
+[Unit]
+Description=Central CTF timer instance
+After=network.target
+
+[Service]
+Type=simple
+User=saarctf
+Group=saarctf
+ExecStart=gspython controlserver/master_timer.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/ctftimer.log
+StandardError=append:/var/log/ctftimer.log
+Restart=on-failure
+RestartSec=10s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+
+[Install]
+WantedBy=multi-user.target

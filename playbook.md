@@ -47,12 +47,16 @@ We will now prepare server images and setup VPN servers (to test against).
    3. Run `~/nginx-enable-ssl.sh` on Controller and VPN server
 9. Check that [https://scoreboard.ctf.saarland](https://scoreboard.ctf.saarland) and [https://vpn.ctf.saarland](https://vpn.ctf.saarland) both have meaningful output. If scoreboard bugs issue `update-server` on Controller. If Flower / RabbitMQ bug issue `~/rabbitmq-setup.sh`. 
 10. Enable the link to scoreboard on the saarCTF website (`TODO`).
-11. Configure synchronization (team logos to scoreboard, VPN config): enable root's cronjob on VPN server and enable saarctf's cronjob on controller.
-12. Create a config for the orga VPN: `cd /opt/gameserver ; python3 vpn/build-openvpn-orga-multi.py`
+11. Configure synchronization (team logos to scoreboard, VPN config): 
+    - Enable root's cronjob on VPN server:
+    - Enable saarctf's cronjob on controller:
+12. Create a config for the orga VPN: 
+    `root@vpn $ cd /opt/gameserver ; python3 vpn/build-openvpn-orga-multi.py`
 13. Ensure all VPN servers are running (more work on this required)
 14. If you use cloud-hosting and want to auto-open the Hetzner Cloud Firewall:
     - On VPN server, edit `/etc/systemd/system/manage-hetzner-firewall.service` and insert a cloud access token
     - `systemctl enable manage-hetzner-firewall && systemctl start manage-hetzner-firewall`
+
 
 
 #### Configure Services
@@ -100,7 +104,14 @@ What we will build:
 8. Rescale Controller and VPN server (for example to CCX31/CCX51). Start with Controller (which might need the additional disk space). 
 9. Once both are up again mention restart in IRC, and check that the replication databases from the backup system are reconnecting. Also check that Controller and Backup have their additional disk space (if not try `resize2fs /dev/sda1`). 
 10. Mount the volume on the VPN server (follow instructions on Hetzner page). Check twice it's mounted to `/mnt/pcaps`, if not: edit `/etc/fstab`, unmount and do `mount -a`.
-11. Create folders and symlinks: `mkdir -p /mnt/pcaps/gametraffic /mnt/pcaps/teamtraffic /mnt/pcaps/temptraffic ; ln -s /mnt/pcaps/gametraffic /tmp/ ; ln -s /mnt/pcaps/teamtraffic /tmp/ ; ln -s /mnt/pcaps/temptraffic /tmp/ ; chown nobody:nogroup /mnt/pcaps/*traffic`
+11. Create folders and symlinks: 
+```
+mkdir -p /mnt/pcaps/gametraffic  /mnt/pcaps/teamtraffic /mnt/pcaps/temptraffic 
+ln -s /mnt/pcaps/gametraffic /tmp/
+ln -s /mnt/pcaps/teamtraffic /tmp/
+ln -s /mnt/pcaps/temptraffic /tmp/
+chown nobody:nogroup /mnt/pcaps/*traffic
+```
 12. On the VPN server start tcpdump (`systemctl start tcpdump-game tcpdump-team`) and check that the pcaps are stored on the mounted volume. 
 13. Start the CTF timer on the Controller server (`systemctl start ctftimer`) and check the results in dashboard. There should be no warning. 
 14. On the backup server, enable the Scoreboard daemon (`systemctl start scoreboard`). 

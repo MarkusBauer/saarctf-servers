@@ -51,7 +51,7 @@ is_hetzner && (
     iptables -A INPUT -p tcp --dport 3000 -j ACCEPT -m comment --comment "HTTP / Grafana"
     iptables -A INPUT -p tcp --dport 8080 -j ACCEPT -m comment --comment "HTTP / CP"
     iptables -A INPUT -p tcp --dport 8443 -j ACCEPT -m comment --comment "HTTPS / Flower"
-    iptables -A INPUT -p tcp --dport 8444 -j ACCEPT -m comment --comment "HTTPS / IceCoder"
+    iptables -A INPUT -p tcp --dport 8444 -j ACCEPT -m comment --comment "HTTPSq / IceCoder"
     iptables -A INPUT -p tcp --dport 8445 -j ACCEPT -m comment --comment "HTTPS / Grafana"
     # these ports work only over internal network
     #iptables -A INPUT -p tcp --dport 8081 -j ACCEPT -m comment --comment "HTTP / Flower"
@@ -121,7 +121,7 @@ echo 'host all all all md5' >> pg_hba.conf
 
 # Configure replication
 mkdir -p /root/failover
-echo 'host replication replicator all md5' >> pg_hba.conf
+echo 'host replication replicator 0.0.0.0/0 md5' >> pg_hba.conf
 echo 'wal_level = replica' >> conf.d/replication.conf
 echo 'archive_mode = on' >> conf.d/replication.conf
 echo "archive_command = 'test ! -f /srv/pg_archive/%f && cp %p /srv/pg_archive/%f'" >> conf.d/replication.conf

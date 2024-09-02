@@ -1,0 +1,20 @@
+[Unit]
+Description=Flower management for Celery workers
+After=network.target
+
+[Service]
+Type=simple
+User=saarctf
+Group=saarctf
+ExecStart=gspython -m celery -A checker_runner.celery_cmd flower --address=127.0.0.1 --port=20000 --persistent=True --db=/home/saarctf/flower
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/flower.log
+StandardError=append:/var/log/flower.log
+Restart=on-failure
+RestartSec=10s
+EnvironmentFile=/etc/environment
+Environment=FLOWER_UNAUTHENTICATED_API=1
+TimeoutSec=5
+
+[Install]
+WantedBy=multi-user.target

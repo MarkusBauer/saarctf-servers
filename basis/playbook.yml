@@ -1,0 +1,265 @@
+---
+- name: 'Provision saarCTF Basis Image'
+  hosts: default
+  become: true
+  vars:
+    gameserver_path: /opt/gameserver
+    fact_from_env:
+      - config_subdir
+      - config_git_repo
+      - gameserver_git_repo
+      - ssh_git_private_key
+      - ssh_git_public_key
+      - ssh_vulnbox_private_key
+      - ssh_vulnbox_public_key
+  tasks:
+    - name: Set facts from env
+      ansible.builtin.set_fact:
+        "{{ item }}": "{{ lookup('env', item|upper) }}"
+      loop: "{{ fact_from_env }}"
+
+    - name: Showfact
+      debug:
+        msg: "fact: {{ item }}; value: {{ lookup('env', item|upper) }}"
+      loop: "{{ fact_from_env }}"
+
+    - name: Ensure root ssh dir
+      ansible.builtin.file:
+        path: /root/.ssh
+        mode: "700"
+        state: directory
+
+    - name: Copy SSH files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "/root/.ssh/{{ item.dest }}"
+        mode: "600"
+      loop:
+        - src: ssh-config
+          dest: config
+        - src: known_hosts
+          dest: known_hosts
+        - src: "../{{ ssh_git_private_key }}"
+          dest: id_ed25519
+        - src: "../{{ ssh_git_public_key }}"
+          dest: id_ed25519.pub
+        - src: "../{{ ssh_vulnbox_private_key }}"
+          dest: vulnbox
+        - src: "../{{ ssh_vulnbox_public_key }}"
+          dest: vulnbox.pub
+
+    - name: Ensure ll alias
+      ansible.builtin.lineinfile:
+        create: true
+        path: /root/.bashrc
+        line: "alias ll='ls -lha'"
+
+    - name: Copy scripts
+      copy:
+        src: scripts/
+        dest: /root
+        mode: "0700"
+
+    - name: Upgrade the base image
+      ansible.builtin.apt:
+        upgrade: "yes"
+
+    - name: Copy tmux.conf
+      ansible.builtin.copy:
+        src: tmux.conf
+        dest: /etc/
+
+    - name: Copy htoprc
+      block:
+        - name: Ensure .config dir
+          ansible.builtin.file:
+            state: directory
+            path: /root/.config
+
+        - name: Copy htoprc
+          ansible.builtin.copy:
+            src: htoprc
+            dest: /root/.config/htop
+
+    - name: Install packages for setup
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - git
+
+    - name: Set git global config
+      git_config:
+        scope: global
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      loop:
+        - { name: 'user.name', value: 'saarct server' }
+        - { name: 'user.email', value: 'saarctf@saarsec.rocks' }
+        - { name: 'pull.rebase', value: 'true' }
+
+    - name: Clone config repo
+      ansible.builtin.git:
+        repo: "{{ config_git_repo }}"
+        dest: /opt/config
+
+    - name: Clone gameserver repo
+      ansible.builtin.git:
+        repo: "{{ gameserver_git_repo }}"
+        dest: "{{ gameserver_path }}"
+
+    # TODO: What is this about?
+    - name: Set git config
+      git_config:
+        scope: local
+        repo: "{{ gameserver_path }}"
+        name: receive.denyCurrentBranch
+        value: warm
+
+    - name: Install prometheus-node-exporter
+      ansible.builtin.apt:
+        install_recommends: false
+        name: prometheus-node-exporter
+
+    - name: Enable prometheus-node-exporter
+      service:
+        enabled: true
+        name: prometheus-node-exporter
+
+    - name: Setup influxdb repos
+      block:
+        - name: Download influxdb key
+          ansible.builtin.get_url:
+            url: https://repos.influxdata.com/influxdata-archive_compat.key
+            dest: /etc/apt/keyrings/influxdb.key.asc
+
+        - name: Add influxdb repo
+          ansible.builtin.apt_repository:
+            # Technically we are using bookworm, but influxdb does not have a repo for bookworm yet
+            repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/influxdb.key.asc] https://repos.influxdata.com/debian stable main"
+            state: present
+
+    # [MB] during local development I sometimes pushed test changes directly to the VM (or from the VM to my local copy)
+    - name: Set git config
+      git_config:
+        scope: local
+        repo: "{{ gameserver_path }}"
+        name: receive.denyCurrentBranch
+        value: warm
+
+    - name: Set git global config
+      git_config:
+        scope: global
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+      loop:
+        - { name: 'user.name', value: 'saarct server' }
+        - { name: 'user.email', value: 'saarctf@saarsec.rocks' }
+        - { name: 'pull.rebase', value: 'true' }
+
+    # TODO: Why are we setting SAARCTF_CONFIG_DIR twice?
+    - name: Set environment variables
+      block:
+        - name: Copy profile.d env.sh
+          template:
+            src: env.sh.j2
+            dest: /etc/profile.d/env.sh
+
+        - name: Ensure SAARCTF_CONFIG_DIR in /etc/environment
+          ansible.builtin.lineinfile:
+            path: /etc/environment
+            line: "SAARCTF_CONFIG_DIR=/opt/config/{{ config_subdir }}"
+
+
+    - name: Install remaining packages
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - sudo
+          - lsb-release
+          - nano
+          - vim
+          - tmux
+          - fish
+          - tree
+          - htop
+          - bash-completion
+          - virt-what
+          - cloud-initramfs-growroot
+          - gnupg
+          - gnupg2
+          # TODO: Weed out dependencies that should just go into the gameserver venv
+          - python3
+          - python3-dev
+          - python3-pip
+          - python3-setuptools
+          - python3-wheel
+          #- python3-redis
+          - python3-psycopg2
+          #- python3-flask
+          #- python3-flask-api
+          #- python3-flask-migrate
+          #- python3-flask-restful
+          #- python3-apscheduler
+          #- python3-sqlalchemy
+          #- python3-setproctitle
+          #- python3-filelock
+          #- python3-htmlmin
+          #- python3-ujson
+          #- python3-requests
+          - python3-venv
+          - python3-virtualenv
+          #- python3-tornado
+          #- python3-babel
+          - openvpn
+          - iptables
+          - iptables-persistent
+          - net-tools
+          - procps
+          - libbpf-dev
+          - iftop
+          - postgresql-client
+          - postgresql-server-dev-all
+          - redis-tools
+          - psutils
+          - curl
+          - wget
+          - screen
+          - rsync
+          - p7zip-full
+          - tcpdump
+          - man
+          - silversearcher-ag
+          - libpq-dev
+          - zlib1g-dev
+          - libjpeg-dev
+          - libpng-dev
+          - build-essential
+
+    - name: Install gameserver deps
+      community.general.make:
+        chdir: "{{ gameserver_path }}"
+        target: deps
+
+    - name: Create helper to run gameserver venv python
+      ansible.builtin.template:
+        src: gspython
+        mode: "u=rwx,g=rx,o=rx"
+        dest: /bin/gspython
+
+    - name: Apt clean
+      ansible.builtin.apt:
+        # FYI: requires ansible 2.13+, current Ubuntu LTS is 2.10. Needs a PPA.
+        clean: true
+
+    # rmate is a helper tool that connects to a local editor via port forwarding
+    - name: Install rmate
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/aurora/rmate/master/rmate"
+        dest: "/usr/local/bin/rmate"
+        mode: "0755"
+
+    # Since we use this as base-image for the other infra servers, we "reset"
+    # Cloud init, so it can do its magic in subsequent builds
+    - name: Run cloud-init clean
+      ansible.builtin.shell:
+        cmd: cloud-init clean

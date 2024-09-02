@@ -3,3 +3,4 @@ output
 /README.html
 /.idea/
 /token.txt
+global-variables.pkrvars.hcl

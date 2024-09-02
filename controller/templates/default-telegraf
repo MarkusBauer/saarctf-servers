@@ -1,0 +1,13 @@
+INFLUX_URL=http://{{ influx_server }}:8086
+INFLUX_PASSWORD={{ influxdb_password }}
+PG_SERVER={{ pg_server }}
+PG_USERNAME={{ pg_username }}
+PG_PASSWORD={{ pg_password }}
+PG_DATABASE={{ pg_database }}
+REDIS_HOST={{ redis_host }}
+REDIS_PORT={{ redis_port }}
+REDIS_PASSWORD={{ redis_password }}
+MQ_HOST={{ mq_host }}
+MQ_VHOST={{ mq_vhost }}
+MQ_USERNAME={{ mq_username }}
+MQ_PASSWORD={{ mq_password }}

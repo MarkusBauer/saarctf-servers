@@ -1,0 +1,46 @@
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/scoreboard/;
+    access_log "/var/log/nginx/scoreboard.log" combined;
+
+    # gzip_static on;
+    gzip on;
+    gzip_types "*";
+    gzip_comp_level 4;
+
+    etag on;
+
+    auth_basic "saarCTF Scoreboard";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+
+    location /patches/ {
+        root /var/www/;
+    }
+
+    location /api/ {
+        # cache: json never
+        add_header Cache-Control "max-age=0, public, must-revalidate";
+    }
+
+    location /team/ {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(?:js|css|svg|woff|woff2|eot|ttf)$ {
+        # cache: js/css/svg/woff/woff2/eot/ttf 1d
+        add_header Cache-Control "max-age=86400, public, must-revalidate";
+        access_log off;
+    }
+
+    location ~* \.(?:jpg|png|gif)$ {
+        # cache: jpg/png 30min must-revalidate
+        add_header Cache-Control "max-age=1800, public, must-revalidate";
+        access_log off;
+    }
+
+    location ~* \.(?:html)$ {
+        # cache: html 30sec
+        add_header Cache-Control "max-age=30, public, must-revalidate";
+    }
+}

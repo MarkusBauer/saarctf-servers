@@ -1,0 +1,19 @@
+[uwsgi]
+env = SAARCTF_CONFIG_DIR={{ saarctf_config_dir }}
+env = HOME=/home/saarctf
+chdir = /opt/gameserver/
+mount = /=controlserver.wsgi:app
+plugin = python3
+virtualenv = /opt/gameserver/venv
+manage-script-name = true
+master = true
+processes = 2
+threads = 2
+uid = saarctf
+gid = saarctf
+lazy = true
+lazy-apps = true
+
+socket = /tmp/controlserver.sock
+chmod-socket = 660
+vacuum = true

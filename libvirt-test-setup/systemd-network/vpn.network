@@ -1,0 +1,7 @@
+[Match]
+Name=en*
+
+[Network]
+Address=10.32.250.1
+Gateway=10.32.0.1
+DNS=8.8.8.8

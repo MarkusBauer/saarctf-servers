@@ -1,0 +1,188 @@
+---
+- name: "Provision saarCTF checker image"
+  hosts: default
+  become: true
+
+  tasks:
+    - name: Pull /opt/config
+      ansible.builtin.shell:
+        chdir: /opt/config
+        cmd: git pull
+
+    - name: Copy Shell scripts
+      copy:
+        src: "{{ item }}.sh"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      loop:
+        - celery-configure
+        - celery-run
+
+    - name: Setting hostnames
+      ansible.builtin.hostname:
+        name: saarctf-checker
+
+    - name: iptables setup
+      block:
+        - name: configure iptables rules
+          ansible.builtin.iptables:
+            chain: INPUT
+            policy: "{{ item.policy | default(omit) }}"
+            in_interface: "{{ item.in_interface | default(omit) }}"
+            protocol: "{{ item.protocol | default(omit) }}"
+            destination_port: "{{ item.dport | default(omit) }}"
+            ctstate: "{{ item.state | default(omit) }}"
+            jump: "{{ item.jump | default(omit) }}"
+          loop:
+            # Accept anything from internal networks
+            - { in_interface: ens10, jump: ACCEPT }
+            - { in_interface: enp7s0, jump: ACCEPT }
+            - { in_interface: lo, jump: ACCEPT }
+            # Only allow those otherwise
+            - { protocol: TCP, dport: 22, jump: ACCEPT }
+            - { match: state, state: [ESTABLISHED,RELATED], jump: ACCEPT }
+            - { protocol: icmp, jump: ACCEPT }
+            # Drop traffic by default
+            - { policy: DROP }
+
+        - name: configure ip6tables rules
+          ansible.builtin.iptables:
+            ip_version: ipv6
+            chain: INPUT
+            policy: "{{ item.policy | default(omit) }}"
+            in_interface: "{{ item.in_interface | default(omit) }}"
+            protocol: "{{ item.protocol | default(omit) }}"
+            destination_port: "{{ item.dport | default(omit) }}"
+            ctstate: "{{ item.state | default(omit) }}"
+            jump: "{{ item. jump | default(omit) }}"
+          loop:
+            - { in_interface: ens10, jump: ACCEPT }
+            - { in_interface: enp7s0, jump: ACCEPT }
+            - { in_interface: lo, jump: ACCEPT }
+            - { protocol: TCP, dport: 22, jump: ACCEPT }
+            - { match: state, state: [ESTABLISHED,RELATED], jump: ACCEPT }
+            - { protocol: icmpv6, jump: ACCEPT }
+            - { policy: DROP }
+
+        - name: save iptables rules
+          shell: iptables-save > /etc/iptables/rules.v4
+
+        - name: save ip6tables rules
+          shell: ip6tables-save > /etc/iptables/rules.v6
+
+    - name: Install packages
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - build-essential
+          - libssl-dev
+          - libffi-dev
+
+    - name: Install python packages
+      community.general.make:
+        chdir: /opt/gameserver
+        target: deps-script
+
+    - name: Configure saarctf user
+      block:
+        - name: Create saarctf user
+          user:
+            name: saarctf
+            system: yes
+            append: true
+
+        - name: Add env.sh source to .profile
+          lineinfile:
+            create: true
+            path: /home/saarctf/.profile
+            line: 'source /etc/profile.d/env.sh'
+
+        - name: Add env.sh source to .bashrc
+          lineinfile:
+            create: true
+            path: /home/saarctf/.bashrc
+            line: 'source /etc/profile.d/env.sh'
+
+    - name: Create checker cache directory
+      file:
+        path: /home/saarctf/checker_cache
+        state: directory
+        owner: saarctf
+        group: saarctf
+        mode: '0755'
+
+    - name: Configure celery
+      vars:
+        - services:
+          - name: celery-selenium
+            conf_file: celery-selenium.conf
+            new_service_name: selenium
+          - name: celery-rawsocket
+            conf_file: celery-rawsocket.conf
+            new_service_name: rawsocket
+
+      block:
+        - name: Create celery.service
+          copy:
+            src: services/celery.service
+            dest: /etc/systemd/system/celery.service
+
+        - name: Copy celery.service to {{ item.name }}.service
+          copy:
+            remote_src: yes
+            src: /etc/systemd/system/celery.service
+            dest: "/etc/systemd/system/{{ item.name }}.service"
+          with_items: "{{ services }}"
+
+        - name: Replace conf filename
+          replace:
+            path: "/etc/systemd/system/{{ item.name }}.service"
+            regexp: "celery.conf"
+            replace: "{{ item.conf_file }}"
+          with_items: "{{ services }}"
+
+        - name: Replace service name
+          replace:
+            path: "/etc/systemd/system/{{ item.name }}.service"
+            regexp: "celery,broadcast"
+            replace: "{{ item.new_service_name }}"
+          with_items: "{{ services }}"
+
+        - name: Add AmbientCapabilities
+          lineinfile:
+            path: "/etc/systemd/system/{{ item.name }}.service"
+            line: "AmbientCapabilities=CAP_NET_RAW"
+            insertbefore: "^ExecStart="
+          with_items: "{{ services }}"
+
+    - name: Copy config files
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/{{ item }}"
+      loop:
+        - celery.conf
+        - celery-selenium.conf
+        - celery-rawsocket.conf
+
+    - name: Create celery log directory
+      file:
+        path: /var/log/celery
+        state: directory
+        owner: saarctf
+        group: saarctf
+        mode: '0755'
+
+    - name: Restart Celery
+      systemd:
+        service: celery
+        state: restarted
+
+    - name: Copy motd
+      ansible.builtin.copy:
+        src: motd
+        dest: /etc/motd
+
+    # Reset Cloud init, so it can do its magic in subsequent builds / boots
+    - name: Run cloud-init clean
+      ansible.builtin.shell:
+        cmd: cloud-init clean

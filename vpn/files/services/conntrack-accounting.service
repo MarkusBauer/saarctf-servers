@@ -1,0 +1,18 @@
+[Unit]
+Description=Conntrack Traffic Accounting Tool
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/conntrack_accounting/conntrack_accounting_tool/conntrack_accounting -src=10.32.0.0/11 -src-group-mask=255.239.255.0 -dst=10.32.0.0/11 -dst-group-mask=255.239.255.0 -exclude-ip=10.32.250.1 -include-icmp -pipe=/tmp/conntrack_acct -output=/root/conntrack_data/new -ports=/root/ports.conf -track-open -interval=15
+WorkingDirectory=/opt/conntrack_accounting
+StandardOutput=append:/var/log/conntrack_accounting.log
+StandardError=append:/var/log/conntrack_accounting.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+
+[Install]
+WantedBy=multi-user.target

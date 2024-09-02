@@ -1,0 +1,7 @@
+Host 10.32.*.2
+  IdentityFile /root/.ssh/vulnbox
+  StrictHostKeyChecking no
+
+Host 10.33.*.2
+  IdentityFile /root/.ssh/vulnbox
+  StrictHostKeyChecking no

@@ -1,0 +1,26 @@
+server {
+  listen 8082;
+  root /opt/icecoder;
+  index index.html index.htm index.nginx-debian.html index.php;
+
+  server_name _;
+
+  location / {
+    try_files $uri $uri/ =404;
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+
+  location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:{{ php_fpm_sock }};
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+
+  location ~ /\.ht {
+    deny all;
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+}

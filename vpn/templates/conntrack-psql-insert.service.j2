@@ -1,0 +1,18 @@
+[Unit]
+Description=Conntrack Traffic Accounting to psql Tool
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart={{ conntrack_accounting.local_repo }}/conntrack_psql_insert.sh
+WorkingDirectory={{ conntrack_accounting.local_repo }}
+StandardOutput=append:/var/log/conntrack_accounting_psql.log
+StandardError=append:/var/log/conntrack_accounting_psql.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+
+[Install]
+WantedBy=multi-user.target

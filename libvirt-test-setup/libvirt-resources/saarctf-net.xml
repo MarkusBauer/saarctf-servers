@@ -1,0 +1,18 @@
+<network connections='1'>
+    <name>saarctf</name>
+    <forward mode='nat'>
+        <nat>
+            <port start='1024' end='65535'/>
+        </nat>
+    </forward>
+    <ip address='10.32.250.9' netmask='255.224.0.0'>
+        <dhcp>
+             <range start='10.32.250.50' end='10.32.250.200'/>
+        </dhcp>
+    </ip>
+    <route address="10.32.0.0" prefix="17" gateway="10.32.250.1"/>
+    <route address="10.32.128.0" prefix="18" gateway="10.32.250.1"/>
+    <route address="10.32.192.0" prefix="19" gateway="10.32.250.1"/>
+    <route address="10.33.0.0" prefix="16" gateway="10.32.250.1"/>
+    <route address="10.48.0.0" prefix="15" gateway="10.32.250.1"/>
+</network>

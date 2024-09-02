@@ -1,0 +1,20 @@
+[Unit]
+Description=Scoreboard daemon (generate off-site scoreboard)
+After=network.target
+
+[Service]
+Type=simple
+User=saarctf
+Group=saarctf
+ExecStart=gspython controlserver/scoring/scoreboard_process.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/scoreboard.log
+StandardError=append:/var/log/scoreboard.log
+Restart=on-failure
+RestartSec=10s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+
+[Install]
+WantedBy=multi-user.target

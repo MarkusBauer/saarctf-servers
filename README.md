@@ -14,23 +14,21 @@ It consists of three server types:
 You need a git configuration repository and a local `config.json` configuration for the build process. 
 See [Configuration](configuration.md) for details.
 
+To prepare server images (for libvirt):
+From the root dir of this repo run:
+- `packer build -var-file global-variables.pkrvars.hcl basis`
+- `packer build -var-file global-variables.pkrvars.hcl controller`
+- `packer build -var-file global-variables.pkrvars.hcl vpn`
+- `packer build -var-file global-variables.pkrvars.hcl checker`
 
-To prepare server images (in VirtualBox for tests):
-- `cd debian ; packer build -var-file=../config.json -only=virtualbox-iso bullseye.json`
-- `cd basis ; packer build -var-file=../config.json -only=virtualbox-ovf basis.json`
-- `cd controller ; packer build -var-file=../config.json -only=virtualbox-ovf controller.json`
-- `cd vpn ; packer build -var-file=../config.json -only=virtualbox-ovf vpn.json`
-- `cd checker ; packer build -var-file=../config.json -only=virtualbox-ovf checker.json`
 
-
-By default these IPs are used:
+By default, these IPs are used:
 - VPN Gateway: `10.32.250.1`
 - Gameserver: `10.32.250.2`
 - Checker server: `10.32.250.3+`
 - Team N: `10.32.N.0/24`
 - Nop-Team: `10.32.1.0/24`
 - Organizer network: `10.32.0.0/24`
-
 
 
 ------------------------------------------------

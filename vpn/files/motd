@@ -1,0 +1,20 @@
+
+=== saarCTF VPN Gateway ===
+
+[2m===============================================[22m
+[2m=[22m [1mAttention:[0m tcpdump needs manual start:      [2m=[22m
+[2m=[22m systemctl start tcpdump-team                [2m=[22m
+[2m=[22m systemctl start tcpdump-game                [2m=[22m
+[2m===============================================[22m
+
+Other systemd services:
+ - vpn@teamX  (openvpn servers, use vpnctl to control)
+ - vpn@teamX-vulnbox / vpn2@teamX-cloud  (openvpn servers, cloud mode, use vpnctl to control)
+ - firewall                 (iptables ruleset)
+ - manage-iptables          (vpn on/off script)
+ - manage-hetzner-firewall  (cloud-hosted vulnbox access on/off script)
+ - trafficstats             (statistics collector)
+ - vpnboard                 (vpn statistics website)
+ - conntrack-accounting / conntrack-psql-insert  (conntrack monitoring)
+
+

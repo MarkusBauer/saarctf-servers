@@ -2,12 +2,12 @@
 
 
 if [ "$1" != "noerror" ]; then
-	set -e
+	set -ex
 fi
 
 git -C /opt/gameserver stash
 git -C /opt/gameserver pull
-git -C /opt/gameserver stash apply
+git -C /opt/gameserver stash apply || true
 git -C /opt/gameserver submodule init
 git -C /opt/gameserver submodule update
 git -C /opt/config pull
@@ -21,14 +21,14 @@ echo "=== BUILD FLAG SUBMISSION SERVER ==="
 cd /opt/gameserver/flag-submission-server
 mkdir -p build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DPostgreSQL_ADDITIONAL_VERSIONS=13 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DPostgreSQL_ADDITIONAL_VERSIONS=15 ..
 make -j`nproc`
 
 
 
 echo "=== UPDATE DB ==="
 cd /opt/gameserver
-flask db upgrade
+/opt/gameserver/run.sh -m alembic upgrade head
 
 
 

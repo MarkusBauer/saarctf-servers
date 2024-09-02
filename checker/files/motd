@@ -1,0 +1,14 @@
+
+=== saarCTF Checker Server ===
+
+[2m=====================================================================[22m
+[2m=[22m [1mAttention:[0m Servers need setup first:                              [2m=[22m
+[2m=[22m Call "celery-configure <server-number>" to bring checkers online. [2m=[22m
+[2m=====================================================================[22m
+
+Other useful commands:
+ - systemctl restart celery
+ - celery-run <hostname> <concurrency>
+Check out /etc/celery.conf to change concurrency.
+
+

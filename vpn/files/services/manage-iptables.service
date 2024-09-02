@@ -1,0 +1,23 @@
+[Unit]
+Description=IPTables firewall manager
+After=network.target
+After=firewall.service
+Requires=firewall.service
+PartOf=firewall.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=gspython vpn/manage-iptables.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/firewall.log
+StandardError=append:/var/log/firewall.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+
+[Install]
+WantedBy=multi-user.target

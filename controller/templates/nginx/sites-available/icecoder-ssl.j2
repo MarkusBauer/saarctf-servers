@@ -1,0 +1,28 @@
+server {
+  listen 8444 ssl;
+  server_name cp.ctf.saarland;
+  ssl_certificate /opt/config/certs/fullchain.pem;
+  ssl_certificate_key /opt/config/certs/privkey.pem;
+
+  root /opt/icecoder;
+  index index.html index.htm index.nginx-debian.html index.php;
+
+  location / {
+    try_files $uri $uri/ =404;
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+
+  location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:{{ php_fpm_sock }};
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+
+  location ~ /\.ht {
+    deny all;
+    auth_basic "saarCTF Administration";
+    auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+  }
+}

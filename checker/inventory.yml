@@ -1,0 +1,6 @@
+---
+all:
+  hosts:
+    default:
+      # Host name used for the checker VM in your ssh config
+      ansible_host: checker

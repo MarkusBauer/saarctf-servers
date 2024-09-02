@@ -1,0 +1,14 @@
+version: 2
+renderer: networkd
+ethernets:
+  interface0:
+    match:
+      name: enp*
+#   This unfortunately causes the interface to not be brought up
+#   set-name: enp7s0
+    addresses:
+      - 10.32.250.10/24
+    gateway4: 10.32.250.9
+    nameservers:
+      addresses: [ "8.8.8.8", "8.8.4.4" ]
+      search: [ example.com ]

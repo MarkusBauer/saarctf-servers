@@ -1,0 +1,20 @@
+
+=== saarCTF Controller Server ===
+
+[2m==============================================[22m
+[2m=[22m [1mAttention:[0m CTF Timer needs manual start:   [2m=[22m
+[2m=[22m [22m systemctl start ctftimer                  [2m=[22m
+[2m=[22m [1mAttention:[0m Make sure to reset rabbitmq:   [2m=[22m
+[2m=[22m [22m /root/rabbitmq-setup.sh                  [2m=[22m
+[2m==============================================[22m
+
+Other useful commands:
+ - update-server
+ - everything in /opt/gameserver/scripts
+ - systemctl restart uwsgi    (controlserver)
+ - systemctl restart flower
+ - systemctl restart ctftimer
+ - systemctl restart scoreboard
+ - systemctl restart submission-server
+
+
