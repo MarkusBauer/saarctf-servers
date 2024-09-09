@@ -1,7 +1,7 @@
 saarCTF Servers
 ===============
 
-See also: [Hetzner Cloud Playbook](playbook.md), [Virtualbox Playbook](virtualbox.md).
+See also: [Hetzner Cloud Playbook](playbook.md).
 
 
 This repository contains setup scripts for all servers required to host an attack-defense CTF with the saarCTF framework.
@@ -11,16 +11,25 @@ It consists of three server types:
 2. **VPN**: OpenVPN, Routing, Firewall, Anonymization
 3. **Checker**: Checker script runner (multiple instances possible)
 
-You need a git configuration repository and a local `config.json` configuration for the build process. 
-See [Configuration](configuration.md) for details.
+
+------------------------------------------------
+## Installation
+
+First, you need a git configuration repository and a local `config.json` configuration for the build process.
+Second, you need a packer configuration to create images.
+See [Configuration](configuration.md) for details on both.
 
 To prepare server images (for libvirt):
-From the root dir of this repo run:
+From the root directory of this repo, run:
+- `packer init basis`
 - `packer build -var-file global-variables.pkrvars.hcl basis`
 - `packer build -var-file global-variables.pkrvars.hcl controller`
 - `packer build -var-file global-variables.pkrvars.hcl vpn`
 - `packer build -var-file global-variables.pkrvars.hcl checker`
 
+To create and launch the VMs (in libvirt), see [libvirt-test-setup/README.md](libvirt-test-setup/README.md).
+
+## Network
 
 By default, these IPs are used:
 - VPN Gateway: `10.32.250.1`
@@ -32,7 +41,7 @@ By default, these IPs are used:
 
 
 ------------------------------------------------
-
+# Components
 ## 1. Gameserver
 Interesting commands: `update-server` (pull updates and rebuild things). 
 

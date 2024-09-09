@@ -2,7 +2,7 @@ saarCTF server playbook
 =======================
 
 This guide will create ready-to-go servers hosted on [Hetzner Cloud](https://www.hetzner.de/cloud). Account there (and services) are required.
-If you want a local test environment check out the [Virtualbox instructions](virtualbox.md).
+If you want a local test environment check out the [libvirt instructions](libvirt-test-setup/README.md).
 
 
 ### Before the CTF
@@ -16,14 +16,17 @@ If you are following the [general playbook](https://gitlab.saarsec.rocks/saarctf
 ### Preparations (a few days before start)
 We will now prepare server images and setup VPN servers (to test against).
 
-1. Open `config.json` in this repository and edit the key `config_subdir` to the name of your new config repo subfolder (created in the very first step). 
-2. Use [packer](https://www.packer.io/) to build all images except debian (Hetzner version only, Virtualbox is not required). Run these commands (basis build before other builds): 
+1. Open `global-variables.pkrvars.hcl` in this repository and edit the key `config_subdir` to the name of your new config repo subfolder (created in the very first step). 
+   Use [example-global-variables.pkrvars.hcl](example-global-variables.pkrvars.hcl) as a basis if this file does not yet exist. 
+   If necessary, also rotate the passwords and SSH keys.
+2. Use [packer](https://www.packer.io/) to build all images (Hetzner version only). Run these commands (basis build before other builds): 
    ```
    export HCLOUD_TOKEN=<...>
-   cd basis      ; packer build -only=hcloud -on-error=ask -var-file=../config.json basis.json      ; cd ..
-   cd controller ; packer build -only=hcloud -on-error=ask -var-file=../config.json controller.json ; cd ..
-   cd vpn        ; packer build -only=hcloud -on-error=ask -var-file=../config.json vpn.json        ; cd ..
-   cd checker    ; packer build -only=hcloud -on-error=ask -var-file=../config.json checker.json    ; cd ..
+   packer init basis
+   packer build -var-file global-variables.pkrvars.hcl -only=hcloud basis
+   packer build -var-file global-variables.pkrvars.hcl -only=hcloud controller
+   packer build -var-file global-variables.pkrvars.hcl -only=hcloud vpn
+   packer build -var-file global-variables.pkrvars.hcl -only=hcloud checker
    ```
    After this step your Hetzner account should have at least snapshots for controller, vpn and checker. 
 3. Create a new private network for the game (or reuse the old one). Configure:
@@ -41,7 +44,7 @@ We will now prepare server images and setup VPN servers (to test against).
    - `vpn.ctf.saarland` should point to the public IP of VPN
    - `scoreboard.ctf.saarland` should point to the public IP of Controller
    - `cp.ctf.saarland` can point to Controller or to a failover Controller server (to be added later)
-8. Let's configure SSL:
+8. Let's configure SSL (saarsec only):
    1. if necessary: on saarsec server copy the certs to the configuration repo (`cp -L /etc/letsencrypt/live/ctf.saarland/* /opt/saarctf-config/certs/`) and push.
    2. Pull repo on Controller and Vpn server server (in `/opt/config`)
    3. Run `~/nginx-enable-ssl.sh` on Controller and VPN server

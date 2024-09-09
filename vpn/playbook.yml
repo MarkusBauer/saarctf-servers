@@ -353,7 +353,7 @@
     - name: Recompile BPF tools
       ignore_errors: true
       community.general.make:
-        chdir: /opt/gameserver/vpn/pbf
+        chdir: /opt/gameserver/vpn/bpf
 
     - name: Copy motd
       ansible.builtin.copy:
