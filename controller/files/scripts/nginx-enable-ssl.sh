@@ -6,7 +6,7 @@ set -eu
 if grep -q 'server_name localhost' /etc/nginx/sites-available/scoreboard; then
 	# Insert SSL config
 sed -e '/server_name localhost;/r'<(cat - <<'EOF'
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name scoreboard.ctf.saarland;
     ssl_certificate /opt/config/certs/fullchain.pem;
     ssl_certificate_key /opt/config/certs/privkey.pem;
@@ -24,6 +24,8 @@ server {
 
     location /saarctf_nginx_status {
         stub_status;
+        allow 127.0.0.1;
+        deny all;
     }
 
     location / {
@@ -46,14 +48,14 @@ sed -e '/server_name localhost;/r'<(cat - <<'EOF'
 
 EOF
 ) -i /etc/nginx/sites-available/controlserver
-sed '2,3d' -i /etc/nginx/sites-available/controlserver
+sed 's|listen 8080;|listen 127.0.0.1:8080;|' -i /etc/nginx/sites-available/controlserver
 
 echo 'controlserver config has been rewritten.'
 fi
 
 
 ln -s /etc/nginx/sites-available/flower-ssl /etc/nginx/sites-enabled/
-ln -s /etc/nginx/sites-available/icecoder-ssl /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/coder-ssl /etc/nginx/sites-enabled/
 ln -s /etc/nginx/sites-available/grafana-ssl /etc/nginx/sites-enabled/
 echo "SSL frontends enabled."
 

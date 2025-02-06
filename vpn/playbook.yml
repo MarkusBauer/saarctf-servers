@@ -36,6 +36,8 @@
         pkg:
           - openvpn
           - easy-rsa
+          - wireguard
+          - wireguard-tools
           - iptables
           - net-tools
           - procps
@@ -44,18 +46,22 @@
           - tcpdump
           - nmap
           - tshark
-          - clang-15
+          - clang
           - nginx
+          - nginx-full
           - telegraf
           - golang
           - cron
+          - make
+          - build-essential
+          - wireguard-tools
+          - iperf3
+          - zstd
 
     - name: Set configuration facts from gameserver conf
       vars:
         fact_to_config:
           # Maps fact names to args for gameserver `config.py get <args>`
-          influx_server: "databases postgres server"
-          influx_password: "databases postgres password"
           pg_server: "databases postgres server"
           pg_username: "databases postgres username"
           pg_password: "databases postgres password"
@@ -63,28 +69,31 @@
       include_tasks: ../fact_from_gameserver_conf.yml
       loop: "{{ fact_to_config | dict2items }}"
 
-    - name: Add influx env vars
+    - name: Add telegraf env vars
       ansible.builtin.lineinfile:
         path: /etc/default/telegraf
         line: "{{ item }}"
       loop:
-        - "INFLUX_URL=http://{{ influx_server }}:8086"
-        - "INFLUX_PASSWORD={{ influx_password }}"
+        - "PG_SERVER={{ pg_server }}"
+        - "PG_USERNAME={{ pg_username }}"
+        - "PG_PASSWORD={{ pg_password }}"
+        - "PG_DATABASE={{ pg_database }}"
+        - "PG_DATABASE_METRICS={{ pg_database }}_metrics"
 
     - name: Setup telegraf
       block:
         - name: Adjust telegraf config
           ansible.builtin.replace:
             dest: /etc/telegraf/telegraf.conf
-            regexp: '{{ item.regexp }}'
-            replace: '{{ item.replace }}'
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
           loop:
             - regexp: '^  interval = [^\n]*'
               replace: '  interval = "15s"'
             - regexp: '^  collection_jitter = [^\n]*'
               replace: '  collection_jitter = "1s"'
             - regexp: '^\[\[outputs.influxdb\]\]'
-              replace: '# [[outputs.influxdb]]'
+              replace: "# [[outputs.influxdb]]"
 
         - name: Copy telegraf.d files
           ansible.builtin.copy:
@@ -112,7 +121,7 @@
         - name: Ensure srvstatus.sh is executable
           ansible.builtin.file:
             path: /opt/srvstatus/srvstatus.sh
-            mode: 'u=rwx,g=rx,o=rx'
+            mode: "u=rwx,g=rx,o=rx"
 
         - name: Copy srvstatus settings.ini
           ansible.builtin.copy:
@@ -184,22 +193,33 @@
             - processed
             - new
 
+    - name: Setup pcap-splitter
+      block:
+        - name: Clone repo
+          ansible.builtin.git:
+            force: yes
+            repo: "ssh://git@gitlab.saarsec.rocks:2222/saarctf/pcap-splitter.git"
+            dest: "/opt/pcap-splitter"
+        - name: Build tools
+          ansible.builtin.command:
+            chdir: "/opt/pcap-splitter"
+            cmd: "make"
+
     # Enables IPv4 forwarding / eBPF JITk
     # TODO: Use sysctl module
     - name: Set various settings in sysctl.conf
-      ansible.builtin.lineinfile:
-        path: /etc/sysctl.conf
-        line: "{{ item }}"
-      loop:
-        - "net.ipv4.ip_forward=1"
-        - "net.core.bpf_jit_enable=1"
-        - "net.netfilter.nf_conntrack_max=33554432"
-        - "net.netfilter.nf_conntrack_expect_max=8192"
-        - "net.netfilter.nf_conntrack_tcp_timeout_established=1200"
-        - "net.core.rmem_max=671088640"
-        - "net.core.rmem_default=671088640"
-        - "net.core.wmem_max=671088640"
-        - "net.core.wmem_default=671088640"
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/saarctf.conf
+        content: |
+          net.ipv4.ip_forward=1
+          net.core.bpf_jit_enable=1
+          net.netfilter.nf_conntrack_max=33554432
+          net.netfilter.nf_conntrack_expect_max=8192
+          net.netfilter.nf_conntrack_tcp_timeout_established=1200
+          net.core.rmem_max=671088640
+          net.core.rmem_default=671088640
+          net.core.wmem_max=671088640
+          net.core.wmem_default=671088640
 
     - name: Add cronjob for conntrack hashsize
       ansible.builtin.cron:
@@ -221,13 +241,15 @@
         - trafficstats
         - firewall
         - manage-iptables
+        - tcpdump-team@
         - tcpdump-team
         - tcpdump-game
+        - vpnboard
+        - conntrack-accounting
+        - wireguard-sync
+        # deprecated OpenVPN services - copied but not enabled
         - vpn@
         - vpn2@
-        - vpnboard
-        - vpnboard-celery
-        - conntrack-accounting
 
     - name: Configure AppArmor for tcpdump
       ansible.builtin.lineinfile:
@@ -286,20 +308,6 @@
             src: /var/www/vpnboard/vpn.html
             state: link
 
-    - name: Configure Celery
-      block:
-        - name: Ensure /var/log/celery
-          ansible.builtin.file:
-            path: /var/log/celery
-            owner: www-data
-            group: www-data
-            state: directory
-
-        - name: Copy vpncelery.conf
-          ansible.builtin.copy:
-            src: vpncelery.conf
-            dest: /etc/vpncelery.conf
-
     - name: Fix prometheus
       ansible.builtin.lineinfile:
         create: true
@@ -337,18 +345,32 @@
             value: "{{ item.value }}"
           loop: "{{ env_vars | dict2items }}"
 
-        - name: Add configs-create crontab
+        # No OpenVPN config files by default
+        #- name: Add configs-create crontab
+        #  ansible.builtin.cron:
+        #    name: "Configs create"
+        #    minute: "5"
+        #    hour: "*/4"
+        #    job: "/root/configs-create.sh > /var/log/configs-create.log 2>&1"
+
+        - name: Add configs-sync crontab
           ansible.builtin.cron:
-            name: "Configs create"
+            name: "Sync keystore file with config repo"
             minute: "5"
             hour: "*/4"
-            job: "/root/configs-create.sh > /var/log/configs-create.log 2>&1"
+            job: "/root/configs-sync.sh > /var/log/configs-sync.log 2>&1"
 
         - name: Add teams-sync crontab
           ansible.builtin.cron:
             name: teams-sync
             minute: "*/3"
             job: "/root/teams-sync.sh > /var/log/teams-sync.log 2>&1"
+
+        - name: Add gameserver bpf on startup
+          ansible.builtin.cron:
+            name: gameserver-bpf
+            special_time: reboot
+            job: "/opt/gameserver/vpn/bpf/install-gameserver.sh 2>&1 > /dev/null"
 
     - name: Recompile BPF tools
       ignore_errors: true
@@ -373,16 +395,38 @@
             - { in_interface: ens10 }
             - { in_interface: enp7s0 }
             - { in_interface: lo }
-            - { match: state, ctstate: [ ESTABLISHED, RELATED ] }
-            - { in_interface: tun+, protocol: icmp, comment: "Ping to VPN gateway" }
-            - { in_interface: tun+, protocol: udp, destination_port: 123, comment: "NTP on VPN gateway" }
+            - { match: state, ctstate: [ESTABLISHED, RELATED] }
+            - {
+                in_interface: tun+,
+                protocol: icmp,
+                comment: "Ping to VPN gateway",
+              }
+            - {
+                in_interface: tun+,
+                protocol: udp,
+                destination_port: 123,
+                comment: "NTP on VPN gateway",
+              }
             - { in_interface: tun+, jump: DROP }
             - { protocol: tcp, destination_port: 22, comment: "SSH" }
-            - { protocol: tcp, destination_port: 80, comment: "HTTP / VPN-Board" }
-            - { protocol: tcp, destination_port: 443, comment: "HTTP / VPN-Board" }
+            - {
+                protocol: tcp,
+                destination_port: 80,
+                comment: "HTTP / VPN-Board",
+              }
+            - {
+                protocol: tcp,
+                destination_port: 443,
+                comment: "HTTPS / VPN-Board",
+              }
+            - {
+                protocol: udp,
+                destination_port: 443,
+                comment: "HTTPS / VPN-Board (http3/quic)",
+              }
             - { protocol: udp, comment: "OpenVPN servers" }
             - { policy: DROP, jump: "{{ omit }}" }
-
+            - { chain: FORWARD, policy: DROP, jump: "{{ omit }}" }
 
         - name: configure ip6tables rules
           vars:
@@ -396,9 +440,21 @@
             - in_interface: enp7s0
             - in_interface: lo
             - { protocol: tcp, destination_port: 22, comment: "SSH" }
-            - { protocol: tcp, destination_port: 80, comment: "HTTP / VPN-Board" }
-            - { protocol: tcp, destination_port: 443, comment: "HTTP / VPN-Board" }
-            - { match: conntrack, ctstate: [ RELATED, ESTABLISHED ], protocol: icmpv6 }
+            - {
+                protocol: tcp,
+                destination_port: 80,
+                comment: "HTTP / VPN-Board",
+              }
+            - {
+                protocol: tcp,
+                destination_port: 443,
+                comment: "HTTP / VPN-Board",
+              }
+            - {
+                match: conntrack,
+                ctstate: [RELATED, ESTABLISHED],
+                protocol: icmpv6,
+              }
             - { policy: DROP, jump: "{{ omit }}" }
 
         - name: save iptables rules
@@ -408,6 +464,35 @@
         - name: save ip6tables rules
           ansible.builtin.shell:
             cmd: ip6tables-save > /etc/iptables/rules.v6
+
+    - name: Install Orga Wireguard VPN
+      block:
+        - name: Check if ctf config dir has orga vpn conf
+          ansible.builtin.stat:
+            path: "{{ saarctf_config_dir }}/vpn/orga/orga.conf"
+          register: orga_vpn_conf_stat
+
+        - name: Create orga conf if missing
+          ansible.builtin.shell:
+            cmd: gspython /opt/gameserver/vpn/build-wireguard-orga-multi.py
+          when: not orga_vpn_conf_stat.stat.exists
+
+        - name: Sync orga conf to repo if it was created
+          ansible.builtin.shell:
+            cmd: /root/configs-sync.sh
+          when: not orga_vpn_conf_stat.stat.exists
+
+        - name: Symlink server config
+          ansible.builtin.file:
+            path: /etc/wireguard/orga.conf
+            src: "{{ saarctf_config_dir }}/vpn/orga/orga.conf"
+            state: link
+            force: yes
+
+        - name: Enable orga VPN on startup
+          ansible.builtin.systemd_service:
+            name: "wg-quick@orga"
+            enabled: true
 
     # Reset Cloud init, so it can do its magic in subsequent builds / boots
     - name: Run cloud-init clean

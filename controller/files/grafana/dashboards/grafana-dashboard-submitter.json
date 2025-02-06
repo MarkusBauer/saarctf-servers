@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_METRICS_DB",
+      "label": "Metrics DB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.1.5"
+    },
+    {
+      "type": "datasource",
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -21,14 +52,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "description": "Submitted flags per minute",
       "fieldConfig": {
@@ -69,6 +100,7 @@
           },
           "links": [],
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -112,181 +144,50 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "0"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_flags",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"count_new\") *4 AS \"new\", mean(\"count_old\") *4 AS \"old\", mean(\"count_expired\") *4 AS \"expired\", mean(\"count_invalid\") *4 AS \"invalid\", mean(\"count_nop\") *4 AS \"nop\", mean(\"count_own\") *4 AS \"own\" FROM \"submitter_flags\" WHERE (\"team\" =~ /^$team$/) AND $timeFilter GROUP BY time($__interval) fill(0)",
-          "rawQuery": false,
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  AVG(count_new)*4 AS \"new\", \n  AVG(count_old)*4 AS \"old\", \n  AVG(count_expired)*4 AS \"expired\", \n  AVG(count_invalid)*4 AS \"invalid\", \n  AVG(count_nop)*4 AS \"nop\", \n  AVG(count_own)*4 AS \"own\"\nFROM submitter_flags \nWHERE $__timeFilter(time) AND team IN ($team)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "count_new"
+                "alias": "\"new\"",
+                "name": "AVG",
+                "parameters": [
+                  {
+                    "name": "count_new",
+                    "type": "functionParameter"
+                  }
                 ],
-                "type": "field"
+                "type": "function"
               },
               {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
+                "parameters": [
+                  {
+                    "name": "\"time\"",
+                    "type": "functionParameter"
+                  }
                 ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "new"
-                ],
-                "type": "alias"
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "count_old"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "old"
-                ],
-                "type": "alias"
+                "property": {
+                  "name": "\"time\"",
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
             ],
-            [
-              {
-                "params": [
-                  "count_expired"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "expired"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_invalid"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "invalid"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_nop"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "nop"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_own"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "own"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "tags": [
-            {
-              "key": "team",
-              "operator": "=~",
-              "value": "/^$team$/"
-            }
-          ]
+            "limit": 50
+          },
+          "table": "submitter_flags"
         }
       ],
       "title": "Submitted Flags",
@@ -294,8 +195,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "description": "How many flags we receive per second",
       "fieldConfig": {
@@ -336,6 +237,7 @@
           },
           "links": [],
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -355,7 +257,7 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 6,
+        "w": 12,
         "x": 12,
         "y": 0
       },
@@ -376,43 +278,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "flags",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_flags",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT (sum(\"count_new\") + sum(\"count_old\") + sum(\"count_expired\") + sum(\"count_invalid\") + sum(\"count_own\") + sum(\"count_nop\")) * 1000  / $__interval_ms \nFROM \"submitter_flags\" WHERE (\"team\" =~ /^$team$/) AND $timeFilter GROUP BY time($__interval) fill(0)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
           "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  (SUM(count_new) + SUM(count_old) + SUM(count_expired) + SUM(count_invalid) + SUM(count_own) + SUM(count_nop)) * 1000 / $__interval_ms AS flags\nFROM submitter_flags\nWHERE $__timeFilter(time) AND team IN ($team)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "count_expired"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Total Flags Incoming",
@@ -420,143 +311,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "decimals": 0,
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.1.5",
-      "targets": [
-        {
-          "alias": "valid flags",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "0"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_flags",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
-              {
-                "params": [
-                  "count_new"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "sum"
-              },
-              {
-                "params": [],
-                "type": "cumulative_sum"
-              }
-            ]
-          ],
-          "tags": [
-            {
-              "key": "team",
-              "operator": "=~",
-              "value": "/^$team$/"
-            }
-          ]
-        }
-      ],
-      "title": "Total Valid Flags",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "description": "All connections / fd's, ignoring the \"team\" filter",
       "fieldConfig": {
@@ -597,6 +353,7 @@
           },
           "links": [],
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -652,107 +409,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_connections",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  AVG(open_connections) AS \"open connections\",\n  AVG(total_connections) / 15 AS \"connections per second\",\n  AVG(fd_count) AS \"fd count\",\n  AVG(fd_max) AS \"fd limit\"\nFROM submitter_connections \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1\n",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "open_connections"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "open connections"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "total_connections"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  " / 15"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "connections per second"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
             ],
-            [
-              {
-                "params": [
-                  "fd_count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "fd count"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "fd_max"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "fd limit"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "tags": []
+            "limit": 50
+          }
         }
       ],
       "title": "Flag Submitter Connections",
@@ -760,8 +442,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "description": "Submission server cache performance for the whole instance, not affected by team filter",
       "fieldConfig": {
@@ -874,83 +556,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_cache",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  AVG(cache_hits) AS \"cache hits\",\n  AVG(cache_misses) AS \"cache misses\",\n  AVG(cache_fails) AS \"cache fails\"\nFROM submitter_cache \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1\n",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "cache_hits"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "cache hits"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "cache_misses"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "cache misses"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
             ],
-            [
-              {
-                "params": [
-                  "cache_fails"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "cache fails"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "tags": []
+            "limit": 50
+          }
         }
       ],
       "title": "Flag Submitter Cache Performance",
@@ -958,8 +589,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "description": "Submitted flags per minute",
       "fieldConfig": {
@@ -1043,210 +674,57 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "0"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_flags",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"count_new\") *4 AS \"new\", mean(\"count_old\") *4 AS \"old\", mean(\"count_expired\") *4 AS \"expired\", mean(\"count_invalid\") *4 AS \"invalid\", mean(\"count_nop\") *4 AS \"nop\", mean(\"count_own\") *4 AS \"own\" FROM \"submitter_flags\" WHERE (\"team\" =~ /^$team$/) AND $timeFilter GROUP BY time($__interval) fill(0)",
-          "rawQuery": false,
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  AVG(count_new)*4 AS \"new\", \n  AVG(count_old)*4 AS \"old\", \n  AVG(count_expired)*4 AS \"expired\", \n  AVG(count_invalid)*4 AS \"invalid\", \n  AVG(count_nop)*4 AS \"nop\", \n  AVG(count_own)*4 AS \"own\"\nFROM submitter_flags \nWHERE $__timeFilter(time) AND team IN ($team)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "count_new"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "new"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "count_old"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "old"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
             ],
-            [
-              {
-                "params": [
-                  "count_expired"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "expired"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_invalid"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "invalid"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_nop"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "nop"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "count_own"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "*4"
-                ],
-                "type": "math"
-              },
-              {
-                "params": [
-                  "own"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "tags": [
-            {
-              "key": "team",
-              "operator": "=~",
-              "value": "/^$team$/"
-            }
-          ]
+            "limit": 50
+          }
         }
       ],
       "title": "Submitted Flags",
       "type": "timeseries"
     }
   ],
-  "refresh": "30s",
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
+        "current": {},
         "datasource": {
-          "type": "influxdb",
-          "uid": "P951FEA4DE68E13C5"
+          "type": "postgres",
+          "uid": "${DS_METRICS_DB}"
         },
-        "definition": "SHOW TAG VALUES FROM \"submitter_flags\" WITH KEY = \"team\"",
+        "definition": "SELECT DISTINCT team FROM submitter_flags ORDER BY team;",
         "hide": 0,
         "includeAll": true,
         "multi": false,
         "name": "team",
         "options": [],
-        "query": "SHOW TAG VALUES FROM \"submitter_flags\" WITH KEY = \"team\"",
+        "query": "SELECT DISTINCT team FROM submitter_flags ORDER BY team;",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1278,6 +756,6 @@
   "timezone": "",
   "title": "Flag Submitter",
   "uid": "0l-nX8lWz",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }

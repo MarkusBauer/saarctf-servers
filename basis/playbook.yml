@@ -1,5 +1,5 @@
 ---
-- name: 'Provision saarCTF Basis Image'
+- name: "Provision saarCTF Basis Image"
   hosts: default
   become: true
   vars:
@@ -48,6 +48,10 @@
         - src: "../{{ ssh_vulnbox_public_key }}"
           dest: vulnbox.pub
 
+    - name: Deploy my SSH key (TODO TMP)  # TODO
+      shell:
+        cmd: cat /root/.ssh/id_ed*.pub >> /root/.ssh/authorized_keys
+
     - name: Ensure ll alias
       ansible.builtin.lineinfile:
         create: true
@@ -93,9 +97,9 @@
         name: "{{ item.name }}"
         value: "{{ item.value }}"
       loop:
-        - { name: 'user.name', value: 'saarct server' }
-        - { name: 'user.email', value: 'saarctf@saarsec.rocks' }
-        - { name: 'pull.rebase', value: 'true' }
+        - { name: "user.name", value: "saarctf server" }
+        - { name: "user.email", value: "saarctf@saarsec.rocks" }
+        - { name: "pull.rebase", value: "true" }
 
     - name: Clone config repo
       ansible.builtin.git:
@@ -107,7 +111,7 @@
         repo: "{{ gameserver_git_repo }}"
         dest: "{{ gameserver_path }}"
 
-    # TODO: What is this about?
+    # What is this about?: me being able to force-push to the VMs during development
     - name: Set git config
       git_config:
         scope: local
@@ -125,19 +129,6 @@
         enabled: true
         name: prometheus-node-exporter
 
-    - name: Setup influxdb repos
-      block:
-        - name: Download influxdb key
-          ansible.builtin.get_url:
-            url: https://repos.influxdata.com/influxdata-archive_compat.key
-            dest: /etc/apt/keyrings/influxdb.key.asc
-
-        - name: Add influxdb repo
-          ansible.builtin.apt_repository:
-            # Technically we are using bookworm, but influxdb does not have a repo for bookworm yet
-            repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/influxdb.key.asc] https://repos.influxdata.com/debian stable main"
-            state: present
-
     # [MB] during local development I sometimes pushed test changes directly to the VM (or from the VM to my local copy)
     - name: Set git config
       git_config:
@@ -152,9 +143,9 @@
         name: "{{ item.name }}"
         value: "{{ item.value }}"
       loop:
-        - { name: 'user.name', value: 'saarct server' }
-        - { name: 'user.email', value: 'saarctf@saarsec.rocks' }
-        - { name: 'pull.rebase', value: 'true' }
+        - { name: "user.name", value: "saarct server" }
+        - { name: "user.email", value: "saarctf@saarsec.rocks" }
+        - { name: "pull.rebase", value: "true" }
 
     # TODO: Why are we setting SAARCTF_CONFIG_DIR twice?
     - name: Set environment variables
@@ -169,7 +160,6 @@
             path: /etc/environment
             line: "SAARCTF_CONFIG_DIR=/opt/config/{{ config_subdir }}"
 
-
     - name: Install remaining packages
       ansible.builtin.apt:
         update_cache: true
@@ -183,33 +173,20 @@
           - tree
           - htop
           - bash-completion
+          - psmisc
           - virt-what
+          - cloud-init
           - cloud-initramfs-growroot
           - gnupg
           - gnupg2
-          # TODO: Weed out dependencies that should just go into the gameserver venv
           - python3
           - python3-dev
           - python3-pip
           - python3-setuptools
           - python3-wheel
-          #- python3-redis
-          - python3-psycopg2
-          #- python3-flask
-          #- python3-flask-api
-          #- python3-flask-migrate
-          #- python3-flask-restful
-          #- python3-apscheduler
-          #- python3-sqlalchemy
-          #- python3-setproctitle
-          #- python3-filelock
-          #- python3-htmlmin
-          #- python3-ujson
-          #- python3-requests
           - python3-venv
           - python3-virtualenv
-          #- python3-tornado
-          #- python3-babel
+          - python3-psycopg2
           - openvpn
           - iptables
           - iptables-persistent
@@ -234,6 +211,105 @@
           - libjpeg-dev
           - libpng-dev
           - build-essential
+
+    - name: Install Docker
+      block:
+        - name: Uninstall legacy
+          ansible.builtin.apt:
+            name:
+              - docker.io
+              - docker-compose
+              - docker-doc
+              - podman-docker
+              - containerd
+              - runc
+            state: absent
+            update_cache: false
+
+        - name: Add docker.io apt-key
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+            dest: /etc/apt/trusted.gpg.d/docker.asc
+            mode: "0644"
+          become: true
+
+        - name: Add docker.io repository
+#          ansible.builtin.apt_repository:
+#            repo: deb https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+#            state: present
+          copy:  # TODO Workaround until trixie is supported by both Ansible and Docker
+            dest: "/etc/apt/sources.list.d/docker.list"
+            content: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/debian bookworm stable\n"
+          become: true
+
+        - name: Install docker-ce
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+            update_cache: true
+          become: true
+
+    - name: Install InfluxDB Repository (for telegraf)
+      tags:
+        - influxdb
+      block:
+        - name: Add Influx GPG key
+          ansible.builtin.get_url:
+            url: "https://repos.influxdata.com/influxdata-archive_compat.key"
+            dest: /etc/apt/trusted.gpg.d/influxdata-archive_compat.asc
+            mode: "0644"
+
+        - name: Add InfluxDB Repository
+#          apt_repository:
+#            repo: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.asc] https://repos.influxdata.com/debian stable main"
+#            state: present
+#            filename: "influxdb"
+#            update_cache: yes
+          copy:  # TODO Workaround until trixie is supported by both Ansible and Telegraf
+            dest: "/etc/apt/sources.list.d/influxdb.list"
+            content: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.asc] https://repos.influxdata.com/debian bookworm stable main\n"
+
+        - name: Install telegraf
+          ansible.builtin.apt:
+            install_recommends: false
+            update_cache: true
+            pkg:
+            - telegraf
+
+
+    - name: Create saarctf user
+      block:
+        - name: Create group
+          group:
+            name: saarctf
+            state: present
+            gid: 1200
+        - name: Create saarctf user
+          user:
+            name: saarctf
+            group: saarctf
+            shell: /bin/bash
+            system: yes
+            append: true
+            create_home: true
+            uid: 1200
+
+        - name: Add env.sh source to .profile
+          lineinfile:
+            create: true
+            path: /home/saarctf/.profile
+            line: "source /etc/profile.d/env.sh"
+
+        - name: Add env.sh source to .bashrc
+          lineinfile:
+            create: true
+            path: /home/saarctf/.bashrc
+            line: "source /etc/profile.d/env.sh"
 
     - name: Install gameserver deps
       community.general.make:
@@ -263,3 +339,19 @@
     - name: Run cloud-init clean
       ansible.builtin.shell:
         cmd: cloud-init clean
+
+    - name: Create ecs log folder
+      ansible.builtin.file:
+        path: /var/log/ecs
+        state: directory
+        owner: root
+        group: saarctf
+        mode: '0775'
+
+    - name: Create metrics log folder
+      ansible.builtin.file:
+        path: /var/log/metrics
+        state: directory
+        owner: root
+        group: saarctf
+        mode: '0775'

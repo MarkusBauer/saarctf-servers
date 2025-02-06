@@ -1,0 +1,22 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Checker against NOP Team",
+            "type": "shell",
+            "command": "python3 /home/saarctf/coder/start_testrun.py check ${file}"
+        },
+        {
+            "label": "Check, upload, and deploy checker",
+            "type": "shell",
+            "command": "python3 /home/saarctf/coder/start_testrun.py deploy-checked ${file}"
+        },
+        {
+            "label": "Upload and deploy checker WITHOUT testing",
+            "type": "shell",
+            "command": "python3 /home/saarctf/coder/start_testrun.py deploy-unchecked ${file}"
+        }
+    ]
+}

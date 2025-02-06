@@ -1,0 +1,22 @@
+[Unit]
+Description=Wireguard interface setup and synchronization script
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStartPre=/root/wireguard-keystore-generate.sh
+ExecStart=gspython wireguard-sync/wireguard_sync/__main__.py
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/wireguard-sync.log
+StandardError=append:/var/log/wireguard-sync.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/gameserver"
+Environment="ECS_LOGFILE=/var/log/ecs/wireguard-sync.log"
+
+[Install]
+WantedBy=multi-user.target

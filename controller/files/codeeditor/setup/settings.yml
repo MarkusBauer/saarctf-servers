@@ -1,0 +1,15 @@
+#auth: password
+#password: 123456789
+auth: none  # we have htaccess password applied by nginx
+disable-telemetry: true
+disable-update-check: true
+
+bind-addr: 127.0.0.1:20001
+cert: false
+# socket: ...
+# proxy-domain
+
+app-name: "saarCTF Service Editor"
+
+user-data-dir: /home/saarctf/coder/users
+extensions-dir: /home/saarctf/coder/extensions

@@ -8,4 +8,10 @@ server {
 
     auth_basic "saarCTF VPNBoard";
     auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+
+    location /saarctf_nginx_status {
+        stub_status;
+        allow 127.0.0.1;
+        deny all;
+    }
 }

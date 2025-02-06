@@ -4,3 +4,15 @@ output
 /.idea/
 /token.txt
 global-variables.pkrvars.hcl
+global-*-variables.pkrvars.hcl
+secrets.pkrvars.hcl
+**/.env
+
+**/secrets.auto.tfvars
+**/secrets.*.tfvars
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform.lock.hcl
+**/.terraform/
+
+

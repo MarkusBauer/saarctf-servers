@@ -1,4 +1,55 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_METRICS_DB",
+      "label": "Metrics DB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "alertlist",
+      "name": "Alert list",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.1.5"
+    },
+    {
+      "type": "datasource",
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -24,7 +75,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 7,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -101,7 +152,10 @@
         "noDataState": "no_data",
         "notifications": []
       },
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -181,7 +235,11 @@
         {
           "expr": "100 - ((node_memory_MemAvailable_bytes{} * 100) / node_memory_MemTotal_bytes{})",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Server RAM Usage",
@@ -224,7 +282,10 @@
         "noDataState": "no_data",
         "notifications": []
       },
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -307,7 +368,11 @@
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
       "title": "Server Disk Usage",
@@ -350,98 +415,101 @@
         "noDataState": "no_data",
         "notifications": []
       },
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
-          "links": []
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
-      "fill": 0,
-      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 6,
         "x": 18,
         "y": 0
       },
-      "hiddenSeries": false,
       "id": 5,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       },
-      "percentage": false,
       "pluginVersion": "10.1.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
       "targets": [
         {
           "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/mnt/pcaps\",fstype!=\"rootfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/mnt/pcaps\",fstype!=\"rootfs\"})",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{instance}} ({{device}} @ \"{{mountpoint}}\")",
-          "refId": "B"
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          }
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 90
-        }
-      ],
-      "timeRegions": [],
       "title": "Server pcap Disk Usage",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "percent",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
+      "type": "timeseries"
     },
     {
       "alert": {
@@ -480,7 +548,10 @@
         "noDataState": "no_data",
         "notifications": []
       },
-      "datasource": "InfluxDB",
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -562,67 +633,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "File Descriptor Usage",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "submitter_connections",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT 100 * mean(\"fd_count\") / mean(\"fd_max\") FROM \"submitter_connections\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
           "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  100 * AVG(fd_count) / AVG(fd_max) AS \"File Descriptor Usage\"\nFROM submitter_connections \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "fd_count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "fd count"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "fd_max"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "fd limit"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Flag Submitter Connections",
@@ -665,7 +701,10 @@
         "noDataState": "no_data",
         "notifications": []
       },
-      "datasource": "InfluxDB",
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
+      },
       "description": ":= current conntrack entries  /  conntrack entry limit",
       "fieldConfig": {
         "defaults": {
@@ -748,67 +787,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "Conntrack Usage",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "conntrack",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT 100 * mean(\"ip_conntrack_count\") / mean(\"ip_conntrack_max\") \nFROM \"conntrack\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
           "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  100 * AVG(ip_conntrack_count) / AVG(ip_conntrack_max) AS \"Conntrack Usage\"\nFROM conntrack \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "ip_conntrack_count"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "conntrack entry count"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "ip_conntrack_max"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "conntrack entries limit"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Conntrack Entries Limit",
@@ -852,8 +856,8 @@
         "notifications": []
       },
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -933,57 +937,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "ping",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  MAX(maximum_response_ms) AS \"max. response time\"\nFROM ping \nWHERE $__timeFilter(time) AND url = '10.32.1.2'\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "maximum_response_ms"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "max"
-              },
-              {
-                "params": [
-                  "max. response time"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": [
-            {
-              "key": "url",
-              "operator": "=",
-              "value": "10.32.1.2"
-            }
-          ]
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "NOP Team Ping Timing",
@@ -1027,8 +1006,8 @@
         "notifications": []
       },
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1129,57 +1108,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "ping",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  MAX(percent_packet_loss) AS \"packet loss\"\nFROM ping \nWHERE $__timeFilter(time) AND url = '10.32.1.2'\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "percent_packet_loss"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "packet loss"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": [
-            {
-              "key": "url",
-              "operator": "=",
-              "value": "10.32.1.2"
-            }
-          ]
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "NOP Team Packet Loss",
@@ -1222,8 +1176,8 @@
         "notifications": []
       },
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1303,54 +1257,39 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "Remaining API Requests",
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "hetzner_rates",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  last(remaining) AS \"Remaining API Requests\"\nFROM hetzner_rates \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "remaining"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "remaining"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Hetzner API Rate Limits",
       "type": "timeseries"
     }
   ],
-  "refresh": "30s",
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -1377,6 +1316,6 @@
   "timezone": "",
   "title": "Alerts",
   "uid": "gyXZAllZz",
-  "version": 10,
+  "version": 3,
   "weekStart": ""
 }

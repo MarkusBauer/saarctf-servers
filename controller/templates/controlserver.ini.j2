@@ -1,6 +1,7 @@
 [uwsgi]
 env = SAARCTF_CONFIG_DIR={{ saarctf_config_dir }}
 env = HOME=/home/saarctf
+env = METRICS_LOGFILE=/var/log/metrics/remote-metrics.log
 chdir = /opt/gameserver/
 mount = /=controlserver.wsgi:app
 plugin = python3

@@ -1,0 +1,23 @@
+server {
+    listen 8444 ssl;
+    server_name cp.ctf.saarland;
+    ssl_certificate /opt/config/certs/fullchain.pem;
+    ssl_certificate_key /opt/config/certs/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:20001;
+        proxy_set_header Host $host;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Accept-Encoding gzip;
+        proxy_set_header X-Forwarded-Host $host:$server_port;
+        proxy_read_timeout 86400;
+
+        auth_basic "saarCTF Administration";
+        auth_basic_user_file "{{ saarctf_config_dir }}/htpasswd";
+    }
+}

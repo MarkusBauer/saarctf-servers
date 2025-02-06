@@ -10,7 +10,6 @@ echo '=====  Databases   ====='
 service_state "postgresql"      "Postgresql"
 service_state "redis"           "Redis     "
 service_state "rabbitmq-server" "RabbitMQ  "
-service_state "influxdb"        "InfluxDB  "
 echo ''
 
 echo '=====     Web      ====='

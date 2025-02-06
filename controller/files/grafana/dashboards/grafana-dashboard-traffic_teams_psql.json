@@ -28,7 +28,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -156,7 +156,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -288,7 +288,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -411,7 +411,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -534,7 +534,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -684,7 +684,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -828,7 +828,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -972,7 +972,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -1053,7 +1053,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "PB240D2FF1AD76564"
+            "uid": "DS_CTF_DB"
           },
           "format": "time_series",
           "group": [
@@ -1108,7 +1108,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "PB240D2FF1AD76564"
+        "uid": "DS_CTF_DB"
       },
       "fieldConfig": {
         "defaults": {
@@ -1209,7 +1209,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "PB240D2FF1AD76564"
+            "uid": "DS_CTF_DB"
           },
           "format": "time_series",
           "group": [],
@@ -1273,7 +1273,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "PB240D2FF1AD76564"
+          "uid": "DS_CTF_DB"
         },
         "definition": "SELECT DISTINCT src FROM vpn_traffic",
         "hide": 0,
@@ -1305,7 +1305,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "PB240D2FF1AD76564"
+          "uid": "DS_CTF_DB"
         },
         "definition": "SELECT DISTINCT dst FROM vpn_traffic",
         "hide": 0,
@@ -1337,7 +1337,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "PB240D2FF1AD76564"
+          "uid": "DS_CTF_DB"
         },
         "definition": "SELECT DISTINCT proto FROM vpn_traffic",
         "hide": 0,
@@ -1369,7 +1369,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "PB240D2FF1AD76564"
+          "uid": "DS_CTF_DB"
         },
         "definition": "SELECT DISTINCT port FROM vpn_traffic",
         "hide": 0,

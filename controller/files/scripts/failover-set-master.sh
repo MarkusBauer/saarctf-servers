@@ -18,8 +18,6 @@ systemctl enable flower
 systemctl start flower
 systemctl enable submission-server
 systemctl start submission-server
-systemctl enable influxdb
-systemctl start influxdb
 
 # Done
 echo "Done. Please recreate scoreboard and start ctftimer."

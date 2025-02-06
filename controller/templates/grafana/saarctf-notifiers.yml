@@ -1,16 +1,18 @@
 # # config file version
 apiVersion: 1
 
-notifiers:
+contactPoints:
   - name: "Control Panel"
-    type: webhook
-    uid: cp
+    orgId: 1
+    receivers:
+      - type: webhook
+        uid: cp
 
-    is_default: true
-    disable_resolve_message: true
-    send_reminder: false
+        is_default: true
+        disable_resolve_message: true
+        send_reminder: false
 
-    settings:
-      url: "https://cp.ctf.saarland/api/grafana_warning"
-      username: "{{ htaccess_username }}"
-      password: "{{ htaccess_password }}"
+        settings:
+          url: "https://cp.ctf.saarland/api/grafana_warning"
+          username: "{{ htaccess_username }}"
+          password: "{{ htaccess_password }}"

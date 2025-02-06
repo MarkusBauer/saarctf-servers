@@ -1,0 +1,109 @@
+{
+    "order": 10,
+    "method": "put",
+    "url": "_ingest/pipeline/postgres",
+    "body": {
+        "description": "Parse and remap postgres logs to elastic common schema.",
+        "processors": [
+            {
+                "json": {
+                    "field": "message",
+                    "target_field": "postgres",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "remove": {
+                    "field": "message",
+                    "ignore_failure": true,
+                    "if": "ctx?.postgres?.message != null"
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.message",
+                    "target_field": "message",
+                    "ignore_failure": true
+                }
+            },
+            {
+            "date": {
+                    "field": "postgres.timestamp",
+                    "formats": [
+                        "yyyy-MM-dd HH:mm:ss.SSS zzz"
+                    ],
+                    "ignore_failure": true
+                }
+            },
+            {
+                "remove": {
+                    "field": "postgres.timestamp",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.user",
+                    "target_field": "client.user.name",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.pid",
+                    "target_field": "process.pid",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.remote_host",
+                    "target_field": "host.name",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.line_num",
+                    "target_field": "log.origin.file.line",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.session_start",
+                    "target_field": "process.session_leader.start",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.error_severity",
+                    "target_field": "log.level",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.session_id",
+                    "target_field": "process.session_leader.pid",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.file_name",
+                    "target_field": "file.name",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "postgres.func_name",
+                    "target_field": "log.origin.function",
+                    "ignore_failure": true
+                }
+            }
+        ]
+    }
+}

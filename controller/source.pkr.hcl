@@ -30,6 +30,13 @@ source "libvirt" "controller" {
   vcpu             = 2
   memory           = 4096
 
+  # some of these are required to get Debian Trixie to boot. Not sure why.
+  chipset = "q35"
+  cpu_mode = "host-passthrough"
+  graphics {
+    type = "vnc"
+  }
+
   network_interface {
     type  = "managed"
     alias = "communicator"

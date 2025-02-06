@@ -1,0 +1,150 @@
+name: saarctf-elastic
+
+volumes:
+  elastic-data:
+    driver_opts:
+      type: none
+      device: ${DATA_ROOT}/elastic-data
+      o: bind
+  kibana-data:
+    driver_opts:
+      type: none
+      device: ${DATA_ROOT}/kibana-data
+      o: bind
+  caddy-data:
+    driver_opts:
+      type: none
+      device: ${DATA_ROOT}/caddy-data
+      o: bind
+  caddy-config:
+    driver_opts:
+      type: none
+      device: ${DATA_ROOT}/caddy-config
+      o: bind
+
+services:
+  caddy:
+    image: caddy:2.8
+    ports:
+      - 80:80
+      - 443:443
+      - 9200:9200
+    environment:
+      - HOST_NAME
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+
+  elasticsearch:
+    image: elasticsearch:${STACK_VERSION}
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+      - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    environment:
+      # Auto-magically used as password for user "elastic"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200 | grep -q 'credentials'"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: '6GB'
+
+  kibana:
+    image: kibana:${STACK_VERSION}
+    hostname: ${HOST_NAME}
+    networks:
+      default:
+        aliases:
+          - kibana
+    volumes:
+      - ./config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana-data:/usr/share/kibana/data
+    environment:
+      ELASTIC_HOST: http://elasticsearch:9200
+      KIBANA_PASSWORD: ${KIBANA_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  metricbeat:
+    image: metricbeat:${STACK_VERSION}
+    # Hostname is included in the log output
+    hostname: ${HOST_NAME}
+    environment:
+      ELASTIC_HOST: http://elasticsearch:9200
+      ELASTIC_USERNAME: elastic
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    # Running as root is needed to get access to certain metrics
+    user: root
+    volumes:
+      - ./config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostfs:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - donotstart
+
+  filebeat-containers:
+    image: filebeat:${STACK_VERSION}
+    # Hostname is included in the log output
+    hostname: ${HOST_NAME}
+    environment:
+      ELASTIC_HOST: http://elasticsearch:9200
+      ELASTIC_USERNAME: elastic
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    # Running as root is necessary because docker sets 710 permissions on everything in
+    # /var/lib/docker/containers, so filebeat won't see the logfiles if it's not root
+    user: root
+    volumes:
+      - ./config/filebeat-container.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Reading the container logs from the same path as on the host FS would be nicer here, but the
+      # add-container-metadata processor fails if the log files are not in "/var/lib/docker/containers"
+      - ${DOCKER_DIR}/containers:/var/lib/docker/containers:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - donotstart
+
+
+  elastic-setup:
+    hostname: ${HOST_NAME}
+    image: masterhorst/elastic-setup
+    build: ./elastic-setup
+    volumes:
+      - ./elastic-setup/src:/src
+    environment:
+      ELASTIC_HOST: http://elasticsearch:9200
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      KIBANA_PASSWORD: ${KIBANA_PASSWORD}
+    command: python3 ./do_setup.py
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    profiles:
+      - donotstart

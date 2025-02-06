@@ -1,0 +1,17 @@
+{
+    "order": 10,
+    "method": "put",
+    "url": "_ingest/pipeline/ecs",
+    "body": {
+        "description": "Parse logs that are already in elastic common schema.",
+        "processors": [
+            {
+                "json": {
+                    "field": "message",
+                    "add_to_root": true,
+                    "ignore_failure": true
+                }
+            }
+        ]
+    }
+}

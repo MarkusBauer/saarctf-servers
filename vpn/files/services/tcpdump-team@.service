@@ -1,0 +1,15 @@
+[Unit]
+Description=Dump team traffic to pcaps (service %I)
+After=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/root/pcap-dirs-init.sh
+ExecStartPre=/opt/gameserver/vpn/tcpdump/setup.sh
+ExecStart=/opt/gameserver/vpn/tcpdump/run-tcpdump.sh team %i
+WorkingDirectory=/opt/gameserver
+StandardOutput=append:/var/log/tcpdump-%i.log
+StandardError=append:/var/log/tcpdump-%i.log
+Restart=on-failure
+RestartSec=5s
+EnvironmentFile=/etc/environment

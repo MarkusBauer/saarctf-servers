@@ -1,0 +1,22 @@
+cluster.name: "easy-elastic"
+
+node.name: easy-elastic-0
+
+http.host: 0.0.0.0
+
+discovery.type: single-node
+
+# This is single node setup, so we won't use the transport layer
+# There is no explicit way to turn it off, so we just bind it to localhost and do not
+# forward the transport port in the docker setup
+transport.host: 127.0.0.1
+
+# Set true to prevent overhead from swapping
+bootstrap.memory_lock: true
+
+xpack.security:
+  enabled: true
+  enrollment.enabled: false
+  # Disable ssl to avoid certificate management
+  http.ssl.enabled: false
+  transport.ssl.enabled: false

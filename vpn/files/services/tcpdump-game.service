@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
+ExecStartPre=/root/pcap-dirs-init.sh
 ExecStartPre=/opt/gameserver/vpn/tcpdump/setup.sh
 ExecStart=/opt/gameserver/vpn/tcpdump/run-tcpdump.sh game
 WorkingDirectory=/opt/gameserver

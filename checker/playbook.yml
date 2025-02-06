@@ -13,7 +13,7 @@
       copy:
         src: "{{ item }}.sh"
         dest: "/usr/local/bin/{{ item }}"
-        mode: 'u=rwx,g=rx,o=rx'
+        mode: "u=rwx,g=rx,o=rx"
       loop:
         - celery-configure
         - celery-run
@@ -40,7 +40,7 @@
             - { in_interface: lo, jump: ACCEPT }
             # Only allow those otherwise
             - { protocol: TCP, dport: 22, jump: ACCEPT }
-            - { match: state, state: [ESTABLISHED,RELATED], jump: ACCEPT }
+            - { match: state, state: [ESTABLISHED, RELATED], jump: ACCEPT }
             - { protocol: icmp, jump: ACCEPT }
             # Drop traffic by default
             - { policy: DROP }
@@ -60,7 +60,7 @@
             - { in_interface: enp7s0, jump: ACCEPT }
             - { in_interface: lo, jump: ACCEPT }
             - { protocol: TCP, dport: 22, jump: ACCEPT }
-            - { match: state, state: [ESTABLISHED,RELATED], jump: ACCEPT }
+            - { match: state, state: [ESTABLISHED, RELATED], jump: ACCEPT }
             - { protocol: icmpv6, jump: ACCEPT }
             - { policy: DROP }
 
@@ -83,43 +83,29 @@
         chdir: /opt/gameserver
         target: deps-script
 
-    - name: Configure saarctf user
-      block:
-        - name: Create saarctf user
-          user:
-            name: saarctf
-            system: yes
-            append: true
-
-        - name: Add env.sh source to .profile
-          lineinfile:
-            create: true
-            path: /home/saarctf/.profile
-            line: 'source /etc/profile.d/env.sh'
-
-        - name: Add env.sh source to .bashrc
-          lineinfile:
-            create: true
-            path: /home/saarctf/.bashrc
-            line: 'source /etc/profile.d/env.sh'
-
     - name: Create checker cache directory
       file:
         path: /home/saarctf/checker_cache
         state: directory
         owner: saarctf
         group: saarctf
-        mode: '0755'
+        mode: "0755"
 
     - name: Configure celery
       vars:
-        - services:
-          - name: celery-selenium
-            conf_file: celery-selenium.conf
-            new_service_name: selenium
-          - name: celery-rawsocket
-            conf_file: celery-rawsocket.conf
-            new_service_name: rawsocket
+        services:
+        - name: celery-selenium
+          conf_file: celery-selenium.conf
+          new_service_name: selenium
+        - name: celery-rawsocket
+          conf_file: celery-rawsocket.conf
+          new_service_name: rawsocket
+        - name: celery-loadtest
+          conf_file: celery-loadtest.conf
+          new_service_name: loadtest
+        - name: celery-tests
+          conf_file: celery-tests.conf
+          new_service_name: tests
 
       block:
         - name: Create celery.service
@@ -163,6 +149,8 @@
         - celery.conf
         - celery-selenium.conf
         - celery-rawsocket.conf
+        - celery-loadtest.conf
+        - celery-tests.conf
 
     - name: Create celery log directory
       file:
@@ -170,7 +158,7 @@
         state: directory
         owner: saarctf
         group: saarctf
-        mode: '0755'
+        mode: "0755"
 
     - name: Restart Celery
       systemd:

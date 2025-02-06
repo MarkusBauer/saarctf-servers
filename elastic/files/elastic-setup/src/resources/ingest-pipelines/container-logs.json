@@ -1,0 +1,37 @@
+{
+    "order": 20,
+    "method": "put",
+    "url": "_ingest/pipeline/container-logs",
+    "body": {
+        "description": "Handle container logs.",
+        "processors": [
+            {
+                "pipeline": {
+                    "name": "ecs",
+                    "description": "All elastic images log ecs",
+                    "if": "ctx?.container?.image?.name == 'saarctf-elastic'"
+                }
+            },
+            {
+                "pipeline": {
+                    "name": "ecs",
+                    "description": "Containers explicitly marked as logging ecs",
+                    "if": "ctx?.container?.labels?.log_schema == 'ecs'"
+                }
+            },
+            {
+                "pipeline": {
+                    "name": "caddy",
+                    "description": "Caddy JSON log format",
+                    "if": "ctx?.container?.labels?.com_docker_compose_service == 'caddy'"
+                }
+            },
+            {
+                "pipeline": {
+                    "name": "Postgres JSON log format",
+                    "if": "ctx?.container?.labels?.com_docker_compose_service == 'postgres'"
+                }
+            }
+        ]
+    }
+}

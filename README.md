@@ -73,11 +73,11 @@ Tornado app (systemd), Nginx frontend.
 - Logs: `/var/log/flower.log`
 
 
-### 1.4 ICEcoder
-PHP app served by Nginx / running as saarctf.
+### 1.4 Code Editor (VSCode based)
+Coder running in docker container as user saarctf.
 - `http://<ip>:8082/`
-- Restart: `systemctl restart php7.3-fpm nginx`
-- Logs: `/opt/icecoder/data/error.log`, `/var/log/nginx/error.log`, `/var/log/fpm-php.www.log`, `/var/log/php7.3-fpm.log`
+- Restart: `docker restart coder-server`
+- Logs: `docker logs coder-server`
 
 
 ### 1.5 Scoreboard

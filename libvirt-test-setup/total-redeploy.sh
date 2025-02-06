@@ -16,9 +16,9 @@ virsh vol-delete --pool default checker
 virsh vol-delete --pool default controller
 virsh vol-delete --pool default vpn
 
-packer build -var-file global-variables.pkrvars.hcl controller
-packer build -var-file global-variables.pkrvars.hcl vpn
-packer build -var-file global-variables.pkrvars.hcl checker
+packer build -var-file global-variables.pkrvars.hcl -only libvirt.* controller
+packer build -var-file global-variables.pkrvars.hcl -only libvirt.* vpn
+packer build -var-file global-variables.pkrvars.hcl -only libvirt.* checker
 
 virsh vol-clone --pool default checker checker-test
 virsh vol-clone --pool default controller controller-test

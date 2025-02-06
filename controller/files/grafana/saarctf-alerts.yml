@@ -13,11 +13,11 @@ groups:
               relativeTimeRange:
                 from: 600
                 to: 0
-              datasourceUid: PBFA97CFB590B2093
+              datasourceUid: DS_PROMETHEUS
               model:
                 datasource:
                     type: prometheus
-                    uid: PBFA97CFB590B2093
+                    uid: DS_PROMETHEUS
                 disableTextWrap: false
                 editorMode: code
                 expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/mnt/pcaps",fstype!="rootfs"} * 100) / node_filesystem_size_bytes{mountpoint="/mnt/pcaps",fstype!="rootfs"})
@@ -98,11 +98,11 @@ groups:
               relativeTimeRange:
                 from: 10800
                 to: 0
-              datasourceUid: PBFA97CFB590B2093
+              datasourceUid: DS_PROMETHEUS
               model:
                 datasource:
                     type: prometheus
-                    uid: PBFA97CFB590B2093
+                    uid: DS_PROMETHEUS
                 expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} * 100) / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"})
                 format: time_series
                 instant: false
@@ -178,11 +178,11 @@ groups:
               relativeTimeRange:
                 from: 10800
                 to: 0
-              datasourceUid: PBFA97CFB590B2093
+              datasourceUid: DS_PROMETHEUS
               model:
                 datasource:
                     type: prometheus
-                    uid: PBFA97CFB590B2093
+                    uid: DS_PROMETHEUS
                 expr: 100 - ((node_memory_MemAvailable_bytes{} * 100) / node_memory_MemTotal_bytes{})
                 interval: ""
                 intervalMs: 15000
@@ -248,7 +248,7 @@ groups:
             __dashboardUid__: gyXZAllZz
             __panelId__: "4"
           isPaused: false
-        - uid: ccaad0d0-0234-405f-8f9b-77198dce0d87
+        - uid: cc367695-5c94-4c08-bfdc-cea2be424916
           title: Flag Submitter Connections
           condition: C
           data:
@@ -256,50 +256,27 @@ groups:
               relativeTimeRange:
                 from: 3600
                 to: 0
-              datasourceUid: P951FEA4DE68E13C5
+              datasourceUid: DS_METRICS_DB
               model:
-                adhocFilters: []
-                alias: File Descriptor Usage
                 datasource:
-                    type: influxdb
-                    uid: P951FEA4DE68E13C5
-                groupBy:
-                    - params:
-                        - $__interval
-                      type: time
-                    - params:
-                        - "null"
-                      type: fill
+                    type: postgres
+                    uid: DS_METRICS_DB
+                editorMode: code
+                format: time_series
                 intervalMs: 15000
-                limit: ""
                 maxDataPoints: 43200
-                measurement: submitter_connections
-                orderByTime: ASC
-                policy: default
-                query: SELECT 100 * mean("fd_count") / mean("fd_max") FROM "submitter_connections" WHERE $timeFilter GROUP BY time(15s) fill(null)
                 rawQuery: true
+                rawSql: "SELECT $__timeGroupAlias(time, 15s), \n  100 * AVG(fd_count) / AVG(fd_max) AS \"File Descriptor Usage\"\nFROM submitter_connections \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1"
                 refId: A
-                resultFormat: time_series
-                select:
-                    - - params:
-                            - fd_count
-                        type: field
-                      - params: []
-                        type: mean
-                      - params:
-                            - fd count
-                        type: alias
-                    - - params:
-                            - fd_max
-                        type: field
-                      - params: []
-                        type: mean
-                      - params:
-                            - fd limit
-                        type: alias
-                slimit: ""
-                tags: []
-                tz: ""
+                sql:
+                    columns:
+                        - parameters: []
+                          type: function
+                    groupBy:
+                        - property:
+                            type: string
+                          type: groupBy
+                    limit: 50
             - refId: B
               relativeTimeRange:
                 from: 3600
@@ -365,59 +342,39 @@ groups:
             __dashboardUid__: gyXZAllZz
             __panelId__: "9"
           isPaused: false
-        - uid: de5b5a20-ac22-401c-ac57-58c9748d9fae
+        - uid: cfa9f17e-3967-43b4-a887-9c1f806b37dc
           title: Conntrack Entries Limit
           condition: C
           data:
             - refId: A
               relativeTimeRange:
-                from: 10800
+                from: 3600
                 to: 0
-              datasourceUid: P951FEA4DE68E13C5
+              datasourceUid: DS_METRICS_DB
               model:
-                adhocFilters: []
-                alias: Conntrack Usage
                 datasource:
-                    type: influxdb
-                    uid: P951FEA4DE68E13C5
-                groupBy:
-                    - params:
-                        - $__interval
-                      type: time
-                    - params:
-                        - "null"
-                      type: fill
+                    type: postgres
+                    uid: DS_METRICS_DB
+                editorMode: code
+                format: time_series
                 intervalMs: 15000
-                limit: ""
                 maxDataPoints: 43200
-                measurement: conntrack
-                orderByTime: ASC
-                policy: default
-                query: "SELECT 100 * mean(\"ip_conntrack_count\") / mean(\"ip_conntrack_max\") \nFROM \"conntrack\" WHERE $timeFilter GROUP BY time(15s) fill(null)"
                 rawQuery: true
+                rawSql: "SELECT $__timeGroupAlias(time, 15s), \n  100 * AVG(ip_conntrack_count) / AVG(ip_conntrack_max) AS \"Conntrack Usage\"\nFROM conntrack \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1"
                 refId: A
-                resultFormat: time_series
-                select:
-                    - - params:
-                            - ip_conntrack_count
-                        type: field
-                      - params: []
-                        type: mean
-                      - params:
-                            - conntrack entry count
-                        type: alias
-                    - - params:
-                            - ip_conntrack_max
-                        type: field
-                      - params: []
-                        type: mean
-                      - params:
-                            - conntrack entries limit
-                        type: alias
-                slimit: ""
-                tags: []
-                tz: ""
+                sql:
+                    columns:
+                        - parameters: []
+                          type: function
+                    groupBy:
+                        - property:
+                            type: string
+                          type: groupBy
+                    limit: 50
             - refId: B
+              relativeTimeRange:
+                from: 3600
+                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -443,6 +400,9 @@ groups:
                 refId: B
                 type: reduce
             - refId: C
+              relativeTimeRange:
+                from: 3600
+                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -471,60 +431,43 @@ groups:
           panelId: 11
           noDataState: NoData
           execErrState: Error
-          for: 5m
+          for: 0s
           annotations:
             __dashboardUid__: gyXZAllZz
             __panelId__: "11"
           isPaused: false
-        - uid: c95ae4c4-f1de-4950-89c5-c62854a483c5
+        - uid: c4fd4846-4cb3-482d-8ae3-5459dd317430
           title: NOP Team Ping Timing
           condition: C
           data:
             - refId: A
               relativeTimeRange:
-                from: 10800
+                from: 3600
                 to: 0
-              datasourceUid: P951FEA4DE68E13C5
+              datasourceUid: DS_METRICS_DB
               model:
-                adhocFilters: []
-                alias: $col
                 datasource:
-                    type: influxdb
-                    uid: P951FEA4DE68E13C5
-                groupBy:
-                    - params:
-                        - $__interval
-                      type: time
-                    - params:
-                        - "null"
-                      type: fill
+                    type: postgres
+                    uid: DS_METRICS_DB
+                editorMode: code
+                format: time_series
                 intervalMs: 15000
-                limit: ""
                 maxDataPoints: 43200
-                measurement: ping
-                orderByTime: ASC
-                policy: default
-                query: ""
+                rawQuery: true
+                rawSql: "SELECT $__timeGroupAlias(time, 15s), \n  MAX(maximum_response_ms) AS \"max. response time\"\nFROM ping \nWHERE $__timeFilter(time) AND url = '10.32.1.2'\nGROUP BY 1\nORDER BY 1"
                 refId: A
-                resultFormat: time_series
-                select:
-                    - - params:
-                            - maximum_response_ms
-                        type: field
-                      - params: []
-                        type: max
-                      - params:
-                            - max. response time
-                        type: alias
-                slimit: ""
-                tags:
-                    - key: url
-                      operator: =
-                      value: 10.32.1.2
-                tz: ""
+                sql:
+                    columns:
+                        - parameters: []
+                          type: function
+                    groupBy:
+                        - property:
+                            type: string
+                          type: groupBy
+                    limit: 50
             - refId: B
               relativeTimeRange:
-                from: 10800
+                from: 3600
                 to: 0
               datasourceUid: __expr__
               model:
@@ -552,7 +495,7 @@ groups:
                 type: reduce
             - refId: C
               relativeTimeRange:
-                from: 10800
+                from: 3600
                 to: 0
               datasourceUid: __expr__
               model:
@@ -580,14 +523,14 @@ groups:
                 type: threshold
           dashboardUid: gyXZAllZz
           panelId: 13
-          noDataState: NoData
+          noDataState: Alerting
           execErrState: Error
-          for: 1m
+          for: 0s
           annotations:
             __dashboardUid__: gyXZAllZz
             __panelId__: "13"
           isPaused: false
-        - uid: ffd32749-1697-44d6-a20e-5eebf9673eb0
+        - uid: d7edd151-c75d-45f0-a145-27a712f18fa1
           title: NOP Team Packet Loss
           condition: C
           data:
@@ -595,48 +538,28 @@ groups:
               relativeTimeRange:
                 from: 10800
                 to: 0
-              datasourceUid: P951FEA4DE68E13C5
+              datasourceUid: DS_METRICS_DB
               model:
-                adhocFilters: []
-                alias: $col
                 datasource:
-                    type: influxdb
-                    uid: P951FEA4DE68E13C5
-                groupBy:
-                    - params:
-                        - $__interval
-                      type: time
-                    - params:
-                        - "null"
-                      type: fill
+                    type: postgres
+                    uid: DS_METRICS_DB
+                editorMode: code
+                format: time_series
                 intervalMs: 15000
-                limit: ""
                 maxDataPoints: 43200
-                measurement: ping
-                orderByTime: ASC
-                policy: default
-                query: ""
+                rawQuery: true
+                rawSql: "SELECT $__timeGroupAlias(time, 15s), \n  MAX(percent_packet_loss) AS \"packet loss\"\nFROM ping \nWHERE $__timeFilter(time) AND url = '10.32.1.2'\nGROUP BY 1\nORDER BY 1"
                 refId: A
-                resultFormat: time_series
-                select:
-                    - - params:
-                            - percent_packet_loss
-                        type: field
-                      - params: []
-                        type: mean
-                      - params:
-                            - packet loss
-                        type: alias
-                slimit: ""
-                tags:
-                    - key: url
-                      operator: =
-                      value: 10.32.1.2
-                tz: ""
+                sql:
+                    columns:
+                        - parameters: []
+                          type: function
+                    groupBy:
+                        - property:
+                            type: string
+                          type: groupBy
+                    limit: 50
             - refId: B
-              relativeTimeRange:
-                from: 10800
-                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -662,9 +585,6 @@ groups:
                 refId: B
                 type: reduce
             - refId: C
-              relativeTimeRange:
-                from: 10800
-                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -693,12 +613,12 @@ groups:
           panelId: 15
           noDataState: NoData
           execErrState: Error
-          for: 1m
+          for: 0s
           annotations:
             __dashboardUid__: gyXZAllZz
             __panelId__: "15"
           isPaused: false
-        - uid: ecf1c596-abc3-4b32-a3a6-8b70cb31db33
+        - uid: bc232294-a5cf-4656-a4f0-275fc39a6e73
           title: Hetzner API Rate Limits
           condition: C
           data:
@@ -706,45 +626,28 @@ groups:
               relativeTimeRange:
                 from: 10800
                 to: 0
-              datasourceUid: P951FEA4DE68E13C5
+              datasourceUid: DS_METRICS_DB
               model:
-                adhocFilters: []
-                alias: Remaining API Requests
                 datasource:
-                    type: influxdb
-                    uid: P951FEA4DE68E13C5
-                groupBy:
-                    - params:
-                        - $__interval
-                      type: time
-                    - params:
-                        - "null"
-                      type: fill
-                intervalMs: 300000
-                limit: ""
+                    type: postgres
+                    uid: DS_METRICS_DB
+                editorMode: code
+                format: time_series
+                intervalMs: 120000
                 maxDataPoints: 43200
-                measurement: hetzner_rates
-                orderByTime: ASC
-                policy: default
-                query: ""
+                rawQuery: true
+                rawSql: "SELECT $__timeGroupAlias(time, 120s), \n  last(remaining) AS \"Remaining API Requests\"\nFROM hetzner_rates \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1"
                 refId: A
-                resultFormat: time_series
-                select:
-                    - - params:
-                            - remaining
-                        type: field
-                      - params: []
-                        type: last
-                      - params:
-                            - remaining
-                        type: alias
-                slimit: ""
-                tags: []
-                tz: ""
+                sql:
+                    columns:
+                        - parameters: []
+                          type: function
+                    groupBy:
+                        - property:
+                            type: string
+                          type: groupBy
+                    limit: 50
             - refId: B
-              relativeTimeRange:
-                from: 10800
-                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -770,9 +673,6 @@ groups:
                 refId: B
                 type: reduce
             - refId: C
-              relativeTimeRange:
-                from: 10800
-                to: 0
               datasourceUid: __expr__
               model:
                 conditions:
@@ -801,7 +701,7 @@ groups:
           panelId: 17
           noDataState: NoData
           execErrState: Error
-          for: 1m
+          for: 0s
           annotations:
             __dashboardUid__: gyXZAllZz
             __panelId__: "17"

@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+			"name": "Run Checker against NOP Team",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "python3 /home/saarctf/coder/start_testrun.py check ${file}"
+		},
+        {
+			"name": "Check, upload, and deploy checker",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "python3 /home/saarctf/coder/start_testrun.py deploy-checked ${file}"
+		},
+        {
+            "name": "Upload and deploy checker WITHOUT testing",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "python3 /home/saarctf/coder/start_testrun.py deploy-unchecked ${file}"
+        }
+    ]
+}

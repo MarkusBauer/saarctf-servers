@@ -6,6 +6,8 @@ After=network.target
 Type=oneshot
 RemainAfterExit=true
 ExecStart=/opt/gameserver/vpn/iptables.sh
+# to ensure we do not lock ourselves out of the server, we restore the initial rules on failure:
+ExecStopPost=iptables-restore /etc/iptables/rules.v4
 WorkingDirectory=/opt/gameserver
 StandardOutput=append:/var/log/firewall.log
 StandardError=append:/var/log/firewall.log

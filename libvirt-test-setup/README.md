@@ -6,7 +6,7 @@ Libvirt definitions and cloud init isos that to run a small setup on one machine
 
 ## Step 0: Build the images
 
-See root Readme.
+See root Readme. Add `-only libvirt.*`.
 
 ## Step 1: Define the saarctf network
 
@@ -39,9 +39,9 @@ virsh vol-clone --pool default checker checker-test
 ## Step 4: Define the VMs
 
 ```sh
-virsh define libvirt-resources/checker.xml
-virsh define libvirt-resources/controller.xml
-virsh define libvirt-resources/vpn.xml
+virsh define libvirt-resources/checker-test.xml
+virsh define libvirt-resources/controller-test.xml
+virsh define libvirt-resources/vpn-test.xml
 ```
 
 ## Step 5: Start the VMs

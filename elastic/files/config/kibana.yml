@@ -1,0 +1,6 @@
+server.host: 0.0.0.0
+
+elasticsearch:
+  hosts: ${ELASTIC_HOST}
+  username: kibana_system
+  password: ${KIBANA_PASSWORD}

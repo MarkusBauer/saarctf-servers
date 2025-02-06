@@ -1,0 +1,252 @@
+{
+    "order": 10,
+    "method": "put",
+    "url": "_ingest/pipeline/caddy",
+    "body": {
+        "description": "Parse and remap caddy logs to elastic common schema.",
+        "processors": [
+            {
+                "json": {
+                    "field": "message",
+                    "target_field": "Caddy",
+                    "ignore_failure": true
+                }
+            },
+            {
+                "remove": {
+                    "field": "message",
+                    "ignore_failure": true,
+                    "if": "ctx?.Caddy?.msg != null"
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.msg",
+                    "target_field": "message",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "date": {
+                    "field": "Caddy.ts",
+                    "formats": [
+                        "date_hour_minute_second_fraction"
+                    ],
+                    "if": "ctx?.Caddy?.ts != null"
+                }
+            },
+            {
+                "remove": {
+                    "field": "Caddy.ts",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.level",
+                    "target_field": "log.level",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.logger",
+                    "target_field": "log.logger",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.error",
+                    "target_field": "error.message",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.user_id",
+                    "target_field": "user.id",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.proto",
+                    "target_field": "http.version",
+                    "ignore_missing": true
+                }
+            },
+
+
+            {
+                "rename": {
+                    "field": "Caddy.size",
+                    "target_field": "http.request.body.bytes",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.method",
+                    "target_field": "http.request.method",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.uri",
+                    "target_field": "url.original",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.host",
+                    "target_field": "url.domain",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "set": {
+                    "field": "Caddy.request_headers",
+                    "value": []
+                }
+            },
+            {
+                "foreach": {
+                    "description": "Fold request headers into list.",
+                    "field": "Caddy.request.headers",
+                    "ignore_missing": true,
+                    "processor": {
+                        "append": {
+                            "field": "Caddy.request_headers",
+                            "value": {
+                                "name": "{{{_ingest._key}}}",
+                                "value": "{{{_ingest._value}}}"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "remove": {
+                    "field": "Caddy.request.headers",
+                    "ignore_missing": true
+                }
+            },
+
+
+            {
+                "rename": {
+                    "field": "Caddy.status",
+                    "target_field": "http.response.status_code",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "set": {
+                    "field": "Caddy.response_headers",
+                    "value": []
+                }
+            },
+            {
+                "foreach": {
+                    "description": "Fold response headers into list.",
+                    "field": "Caddy.resp_headers",
+                    "ignore_missing": true,
+                    "processor": {
+                        "append": {
+                            "field": "Caddy.response_headers",
+                            "value": {
+                                "name": "{{{_ingest._key}}}",
+                                "value": "{{{_ingest._value}}}"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.uuid",
+                    "target_field": "http.request.id",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "remove": {
+                    "field": "Caddy.resp_headers",
+                    "ignore_missing": true
+                }
+            },
+
+
+            {
+                "rename": {
+                    "field": "Caddy.request.remote_ip",
+                    "target_field": "client.ip",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "set": {
+                    "field": "client.address",
+                    "copy_from": "client.ip",
+                    "ignore_empty_value": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.remote_port",
+                    "target_field": "client.port",
+                    "ignore_missing": true
+                }
+            },
+
+
+            {
+                "rename": {
+                    "description": "Not part of ECS",
+                    "field": "Caddy.request.tls.cipher_suite",
+                    "target_field": "tls.cipher_suite",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "description": "Something related to HTTP/2, not part of ECS",
+                    "field": "Caddy.request.tls.proto",
+                    "target_field": "tls.proto",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.tls.resumed",
+                    "target_field": "tls.resumed",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.tls.server_name",
+                    "target_field": "tls.server_name",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "rename": {
+                    "field": "Caddy.request.tls.version",
+                    "target_field": "tls.version",
+                    "ignore_missing": true
+                }
+            },
+            {
+                "convert": {
+                    "field": "tls.version",
+                    "type": "string",
+                    "ignore_missing": true
+                }
+            }
+        ]
+    }
+}

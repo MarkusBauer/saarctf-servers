@@ -30,6 +30,13 @@ source "libvirt" "basis" {
   vcpu             = 2
   memory           = 1024
 
+  # some of these are required to get Debian Trixie to boot. Not sure why.
+  chipset = "q35"
+  cpu_mode = "host-passthrough"
+  graphics {
+    type = "vnc"
+  }
+
   network_interface {
     type  = "managed"
     alias = "communicator"
@@ -51,9 +58,9 @@ source "libvirt" "basis" {
     source {
       type = "external"
       urls = [
-        "https://cloud.debian.org/images/cloud/bookworm/20230802-1460/debian-12-generic-amd64-20230802-1460.qcow2"
+        "https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-generic-amd64-daily.qcow2"
       ]
-      checksum = "b93f128b9ace828c7656597e462c03ea614a6635cd497c06904e8348385ded10cf43fadf0a427dde9f1ff5417f3bad37ed51d966c948ffed54f0f2e8eec599ae"
+      # checksum = "b93f128b9ace828c7656597e462c03ea614a6635cd497c06904e8348385ded10cf43fadf0a427dde9f1ff5417f3bad37ed51d966c948ffed54f0f2e8eec599ae"
     }
 
     capacity = "10G"
@@ -85,7 +92,7 @@ source "libvirt" "basis" {
 
 source "hcloud" "basis" {
   token           = "${ var.hcloud_token }"
-  image           = "debian-12"
+  image           = "debian-13"
   snapshot_name   = "basis-{{timestamp}}"
   snapshot_labels = {
     name = "basis"

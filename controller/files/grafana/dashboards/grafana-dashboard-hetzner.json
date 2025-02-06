@@ -1,4 +1,47 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_METRICS_DB",
+      "label": "Metrics DB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.1.5"
+    },
+    {
+      "type": "datasource",
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,14 +61,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 12,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -69,159 +112,31 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "cloud_servers",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"value\") FROM \"measurement\" WHERE $timeFilter GROUP BY time($__interval) fill(null)",
-          "rawQuery": false,
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  last(servers) AS \"ALL\",\n  last(\"RUNNING\") AS running,\n  last(\"BUSY\") AS busy,\n  last(\"CREATING\") AS creating,\n  last(\"BOOTING\") AS booting,\n  last(\"STOPPED\") AS stopped,\n  last(\"MISSING\") AS deleting\nFROM cloud_servers \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY time",
           "refId": "A",
-          "resultFormat": "table",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "servers"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "ALL"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "RUNNING"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "running"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
             ],
-            [
-              {
-                "params": [
-                  "BUSY"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "busy"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "CREATING"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "creating"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "BOOTING"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "booting"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "STOPPED"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "stopped"
-                ],
-                "type": "alias"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "MISSING"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "deleting"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "tags": []
+            "limit": 50
+          }
         }
       ],
       "title": "Cloud Servers",
@@ -229,8 +144,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -334,59 +249,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col @$tag_backend",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "backend"
-              ],
-              "type": "tag"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "cloud_servers",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT max(\"servers\") AS \"servers\", max(\"BUSY\")+max(\"CREATING\")+max(\"MISSING\")+max(\"BOOTING\")+max(\"STOPPED\") AS \"not running\" FROM \"cloud_servers\" WHERE $timeFilter GROUP BY time($__interval), \"backend\" fill(null)",
+          "editorMode": "code",
+          "format": "time_series",
           "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  max(\"servers\") AS \"servers\", \n  max(\"BUSY\")+max(\"CREATING\")+max(\"MISSING\")+max(\"BOOTING\")+max(\"STOPPED\") AS \"not running\" \nFROM \"cloud_servers\"\nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "servers"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "max"
-              },
-              {
-                "params": [
-                  "servers"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Servers",
@@ -394,8 +282,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -447,67 +335,31 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "hetzner_rates",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  last(remaining) AS remaining,\n  last(\"limit\") AS \"total\"\nFROM hetzner_rates \nWHERE $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "table",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "remaining"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "remaining"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
             ],
-            [
+            "groupBy": [
               {
-                "params": [
-                  "limit"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "last"
-              },
-              {
-                "params": [
-                  "total"
-                ],
-                "type": "alias"
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Hetzner API Rate Limits",
@@ -515,8 +367,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -554,6 +406,7 @@
               "mode": "off"
             }
           },
+          "displayName": "cpu @${__field.labels.server}",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -595,59 +448,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col @$tag_server",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "server"
-              ],
-              "type": "tag"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "vulnboxes",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"cpu\") FROM \"vulnboxes\" WHERE $timeFilter GROUP BY time($__interval), \"server\" fill(null)",
-          "rawQuery": false,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  server,\n  AVG(cpu) AS cpu\nFROM vulnboxes \nWHERE $__timeFilter(time)\nGROUP BY 1, server\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "cpu"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
-              },
-              {
-                "params": [
-                  "cpu"
-                ],
-                "type": "alias"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Vulnbox CPU Usage",
@@ -655,8 +481,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -694,6 +520,7 @@
               "mode": "off"
             }
           },
+          "displayName": "bandwidth @${__field.labels.server}",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -735,53 +562,32 @@
       "pluginVersion": "10.1.5",
       "targets": [
         {
-          "alias": "$col @$tag_server",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "server"
-              ],
-              "type": "tag"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "vulnboxes",
-          "orderByTime": "ASC",
-          "policy": "default",
-          "query": "SELECT mean(\"network.0.bandwidth.in\")+mean(\"network.0.bandwidth.out\") AS \"bandwidth\" FROM \"vulnboxes\" WHERE $timeFilter GROUP BY time($__interval), \"server\" fill(null)",
+          "editorMode": "code",
+          "format": "time_series",
           "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  server,\n  AVG(\"network.0.bandwidth.in\") + AVG(\"network.0.bandwidth.out\") AS cpu\nFROM vulnboxes \nWHERE $__timeFilter(time)\nGROUP BY 1, server\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "network.0.bandwidth.in"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "Vulnbox Network Bandwidth",
@@ -789,8 +595,8 @@
     },
     {
       "datasource": {
-        "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "type": "postgres",
+        "uid": "${DS_METRICS_DB}"
       },
       "fieldConfig": {
         "defaults": {
@@ -844,58 +650,39 @@
       "repeat": "Server",
       "targets": [
         {
-          "alias": "$tag_server",
           "datasource": {
-            "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "type": "postgres",
+            "uid": "${DS_METRICS_DB}"
           },
-          "groupBy": [
-            {
-              "params": [
-                "$__interval"
-              ],
-              "type": "time"
-            },
-            {
-              "params": [
-                "server"
-              ],
-              "type": "tag"
-            },
-            {
-              "params": [
-                "null"
-              ],
-              "type": "fill"
-            }
-          ],
-          "measurement": "vulnboxes",
-          "orderByTime": "ASC",
-          "policy": "default",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), \n  server,\n  AVG(cpu)\nFROM vulnboxes \nWHERE $__timeFilter(time)\nGROUP BY 1, server\nORDER BY 1",
           "refId": "A",
-          "resultFormat": "time_series",
-          "select": [
-            [
+          "sql": {
+            "columns": [
               {
-                "params": [
-                  "cpu"
-                ],
-                "type": "field"
-              },
-              {
-                "params": [],
-                "type": "mean"
+                "parameters": [],
+                "type": "function"
               }
-            ]
-          ],
-          "tags": []
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
         }
       ],
       "title": "CPU",
       "type": "gauge"
     }
   ],
-  "refresh": "30s",
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],

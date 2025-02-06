@@ -1,14 +1,42 @@
 [Unit]
-Description=Dump team traffic to pcaps
+Description=Dump team traffic to pcaps (master service)
 After=network.target
 
+After=tcpdump-team@0.service
+Requires=tcpdump-team@0.service
+After=tcpdump-team@1.service
+Requires=tcpdump-team@1.service
+After=tcpdump-team@2.service
+Requires=tcpdump-team@2.service
+After=tcpdump-team@3.service
+Requires=tcpdump-team@3.service
+After=tcpdump-team@4.service
+Requires=tcpdump-team@4.service
+After=tcpdump-team@5.service
+Requires=tcpdump-team@5.service
+After=tcpdump-team@6.service
+Requires=tcpdump-team@6.service
+After=tcpdump-team@7.service
+Requires=tcpdump-team@7.service
+After=tcpdump-team@8.service
+Requires=tcpdump-team@8.service
+After=tcpdump-team@9.service
+Requires=tcpdump-team@9.service
+After=tcpdump-team@10.service
+Requires=tcpdump-team@10.service
+After=tcpdump-team@11.service
+Requires=tcpdump-team@11.service
+After=tcpdump-team@12.service
+Requires=tcpdump-team@12.service
+After=tcpdump-team@13.service
+Requires=tcpdump-team@13.service
+After=tcpdump-team@14.service
+Requires=tcpdump-team@14.service
+
 [Service]
-Type=simple
-ExecStartPre=/opt/gameserver/vpn/tcpdump/setup.sh
-ExecStart=/opt/gameserver/vpn/tcpdump/run-tcpdump.sh team
-WorkingDirectory=/opt/gameserver
-StandardOutput=append:/var/log/tcpdump.log
-StandardError=append:/var/log/tcpdump.log
-Restart=on-failure
-RestartSec=5s
-EnvironmentFile=/etc/environment
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/true
+
+[Install]
+WantedBy=multi-user.target

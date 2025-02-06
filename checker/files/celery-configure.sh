@@ -24,9 +24,13 @@ HOST_NUMBER="$1"
 sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}|" /etc/celery.conf
 sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}-selenium|" /etc/celery-selenium.conf
 sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}-rawsocket|" /etc/celery-rawsocket.conf
-sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$((3*$(nproc)))|" /etc/celery.conf
+sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}-loadtest|" /etc/celery-loadtest.conf
+sed -i -E "s|CELERYD_NODES=.*|CELERYD_NODES=worker${HOST_NUMBER}-tests|" /etc/celery-tests.conf
+sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$((4*$(nproc)))|" /etc/celery.conf
 sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$(nproc)|" /etc/celery-selenium.conf
 sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=$(nproc)|" /etc/celery-rawsocket.conf
+sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=48|" /etc/celery-loadtest.conf
+sed -i -E "s|CELERYD_CONCURRENCY=.*|CELERYD_CONCURRENCY=4|" /etc/celery-tests.conf
 is_virtualbox && (
   sed -i -E "s|-checker-\w+|-checker-${HOST_NUMBER}|g" /etc/hostname
   sed -i -E "s|-checker-\w+|-checker-${HOST_NUMBER}|g" /etc/hosts
@@ -49,9 +53,15 @@ echo ""
 echo "Starting celery ..."
 systemctl enable celery
 systemctl start celery
+systemctl enable celery-loadtest
+systemctl start celery-loadtest
+systemctl enable celery-tests
+systemctl start celery-tests
 sleep 1
 systemctl status celery
 echo "Done."
 echo "Service celery: $(grep 'CELERYD_CONCURRENCY' /etc/celery.conf)"
+echo "Service celery-loadtest: $(grep 'CELERYD_CONCURRENCY' /etc/celery-loadtest.conf)
+echo "Service celery-tests: $(grep 'CELERYD_CONCURRENCY' /etc/celery-tests.conf)
 echo "Service celery-selenium: $(grep 'CELERYD_CONCURRENCY' /etc/celery-selenium.conf) (disabled by default)"
 echo "Service celery-rawsocket: $(grep 'CELERYD_CONCURRENCY' /etc/celery-rawsocket.conf) (disabled by default)"

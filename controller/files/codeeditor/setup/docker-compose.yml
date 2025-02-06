@@ -1,0 +1,20 @@
+services:
+  coder-server:
+    build: .
+    container_name: coder-server
+    restart: always
+    volumes:
+      - /home/saarctf/coder:/home/saarctf/coder
+      - /home/saarctf/checkers:/home/saarctf/checkers
+      - /home/saarctf/.ssh:/home/saarctf/.ssh:ro
+      - /opt/coder/settings.yml:/settings.yml:ro
+    user: saarctf:saarctf
+    command: ["--config", "/settings.yml", "/home/saarctf/checkers"]
+    # also run once with: --config /settings.yml --install-extension ms-python.python
+    network_mode: host
+    environment:
+      API_URL: http://localhost:8080/
+      API_USER: saarsec
+      API_PASS: 123456789
+      CP_URL: http://10.32.250.2:8080/
+      FLOWER_URL: http://10.32.250.2:8080/flower/

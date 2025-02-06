@@ -1,0 +1,38 @@
+{
+    "order": 10,
+    "method": "put",
+    "url": "_ilm/policy/container-logs",
+    "body": {
+        "policy": {
+            "phases": {
+                "hot": {
+                    "min_age": "0ms",
+                    "actions": {
+                        "set_priority": {
+                            "priority": 100
+                        },
+                        "rollover": {
+                            "max_primary_shard_size": "1gb",
+                            "max_age": "1d"
+                        }
+                    }
+                },
+                "cold": {
+                    "min_age": "2d",
+                    "actions": {
+                        "readonly": {},
+                        "set_priority": {
+                            "priority": 0
+                        }
+                    }
+                },
+                "delete": {
+                    "min_age": "31d",
+                    "actions": {
+                        "delete": {}
+                    }
+                }
+            }
+        }
+    }
+}

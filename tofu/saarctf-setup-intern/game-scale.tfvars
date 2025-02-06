@@ -1,0 +1,1 @@
+../saarctf-setup/game-scale.tfvars

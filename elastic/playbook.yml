@@ -1,0 +1,6 @@
+---
+- name: "Provision saarCTF elastic image"
+  tags:
+    - elastic
+  hosts: default
+  become: true

@@ -1,0 +1,7 @@
+https://{$HOST_NAME} {
+    reverse_proxy http://kibana:5601
+}
+
+https://{$HOST_NAME}:9200 {
+    reverse_proxy http://elasticsearch:9200
+}

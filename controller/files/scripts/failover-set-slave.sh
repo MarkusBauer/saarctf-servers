@@ -15,8 +15,6 @@ systemctl disable flower
 systemctl stop ctftimer
 systemctl stop submission-server
 systemctl disable submission-server
-systemctl stop influxdb
-systemctl disable influxdb
 
 
 # switch postgresql to standby mode

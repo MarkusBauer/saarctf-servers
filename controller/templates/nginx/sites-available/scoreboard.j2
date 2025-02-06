@@ -9,6 +9,11 @@ server {
     gzip_types "*";
     gzip_comp_level 4;
 
+    # brotli compression also on
+    brotli on;
+    brotli_comp_level 6;
+    brotli_types text/plain text/html text/css application/json application/x-javascript text/javascript application/javascript;
+
     etag on;
 
     auth_basic "saarCTF Scoreboard";
@@ -27,6 +32,10 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    location /graphs {
+        try_files $uri $uri/ /index.html;
+    }
+
     location ~* \.(?:js|css|svg|woff|woff2|eot|ttf)$ {
         # cache: js/css/svg/woff/woff2/eot/ttf 1d
         add_header Cache-Control "max-age=86400, public, must-revalidate";
@@ -42,5 +51,11 @@ server {
     location ~* \.(?:html)$ {
         # cache: html 30sec
         add_header Cache-Control "max-age=30, public, must-revalidate";
+    }
+
+    location /saarctf_nginx_status {
+        stub_status;
+        allow 127.0.0.1;
+        deny all;
     }
 }

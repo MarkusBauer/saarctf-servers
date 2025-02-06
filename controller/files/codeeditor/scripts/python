@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import sys
+import os
+
+TESTRUNNER = '/home/saarctf/coder/start_testrun.py'
+
+
+def is_checker_file(f: str) -> bool:
+    return f.startswith('/home/saarctf/checkers/') and f.endswith('.py')
+
+
+# we intercept "run python script" actions on checkerscript files and run the remote pipeline instead.
+# it's very unlikely that running scripts locally will give meaningful results.
+# for example because the dev container has no dependencies
+for arg in sys.argv[1:]:
+    if is_checker_file(arg):
+        os.execl(sys.executable, TESTRUNNER, TESTRUNNER, 'check', *sys.argv[1:])
+
+os.execl(sys.executable, sys.executable, *sys.argv[1:])
